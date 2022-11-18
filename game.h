@@ -20,8 +20,8 @@ class Game
     void insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end);
     void draw_health_bars(const std::vector<const Tank*>& sorted_tanks, const int team);
     void measure_performance();
-    //void mergeSortInterval(std::vector<float>& vec, int st, int mid, int end);
-    //void mergeSort(std::vector<float>& vec, int st, int end);
+    void mergeSortInterval(std::vector<float>& vec, int st, int mid, int end);
+    void mergeSort(std::vector<float>& vec, int st, int end);
     int binarySearch(int array[], int x, int low, int high);
 
     Tank& find_closest_enemy(Tank& current_tank);

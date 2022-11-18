@@ -78,7 +78,6 @@ void Game::init()
     //Calculate the route to the destination for each tank using BFS
     for (Tank& t : tanks)
     {
-        cout << "route set" << endl;
         t.set_route(background_terrain.get_route(t, t.target));
     }
 
@@ -101,51 +100,6 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
 {
     float closest_distance = numeric_limits<float>::infinity();
     int closest_index = 0;
-
-    // -------------merge sort
-    /*if (tanks.at(0).allignment != current_tank.allignment && tanks.at(0).active) {
-        std::vector<float> tankDis;
-        for (Tank& t : tanks)
-        {
-            float sqr_dist = fabsf((t.get_position() - current_tank.get_position()).sqr_length());
-            float nearest = roundf(sqr_dist * 100) / 100;
-            tankDis.push_back(nearest);
-        }
-
-        mergeSort(tankDis, 0, tanks.size() - 1);
-        cout << tankDis[0] << endl;
-        closest_index = 1;
-    }*/
-
-
-    // ------------Binary search
-    /*int st = 0;
-    int end = tanks.size() -1;
-    int mid;
-
-    while (st <= end) {
-        mid = (st + end) / 2;
-        
-        if (tanks.at(mid).allignment != current_tank.allignment && tanks.at(mid).active){
-            float sqr_dist = fabsf((tanks.at(mid).get_position() - current_tank.get_position()).sqr_length());
-            if (sqr_dist < closest_distance)
-            {
-                closest_distance = sqr_dist;
-                closest_index = mid;
-                cout << "inside if statement" << endl;
-                break;
-            }
-        }
-        else if (current_tank.allignment > tanks.at(mid).allignment && tanks.at(mid).active) {
-            st = mid++;
-            cout << "inside if else statement" << endl;
-        }
-        else if (current_tank.allignment < tanks.at(mid).allignment && tanks.at(mid).active) {
-            end = mid--;
-            cout << "inside if else statement" << endl;
-        }
-
-    }*/
 
     for (int i = 0; i < tanks.size(); i++)
     {
@@ -172,21 +126,26 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
 //    while (lpos <= mid && rpos <= r) {
 //        if (vec[lpos] < vec[rpos]) {
 //            temp.push_back(vec[lpos]);
+//            lpos++;
 //        }
 //        else {
 //            temp.push_back(vec[rpos]);
+//            rpos++;
 //        }
 //    }
 //    while (lpos <= mid) {
 //        temp.push_back(vec[lpos]);
+//        lpos++;
 //    }
 //    while (rpos <= r) {
 //        temp.push_back(vec[rpos]);
+//        rpos++;
 //    }
 //    
 //    for (int i = l; i <= r; i++) {
 //        int j = i - l;
-//        vec[j] = temp[i];
+//        vec[i] = temp[j];
+//        /*cout << i << endl;*/
 //    }
 //}
 //
@@ -196,27 +155,28 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
 //        mergeSort(vec, l, mid);
 //        mergeSort(vec, mid+1, r);
 //        mergeSortInterval(vec, l, mid, r);
+//        /*cout << mid << endl;*/
 //    }
 //}
-
-int Game::binarySearch(int array[], int x, int low, int high) {
-    if (high >= low) {
-        int mid = low + (high - low) / 2;
-
-        // If found at mid, then return it
-        if (array[mid] == x)
-            return mid;
-
-        // Search the left half
-        if (array[mid] > x)
-            return binarySearch(array, x, low, mid - 1);
-
-        // Search the right half
-        return binarySearch(array, x, mid + 1, high);
-    }
-
-    return -1;
-}
+//
+//int Game::binarySearch(int array[], int x, int low, int high) {
+//    if (high >= low) {
+//        int mid = low + (high - low) / 2;
+//
+//        // If found at mid, then return it
+//        if (array[mid] == x)
+//            return mid;
+//
+//        // Search the left half
+//        if (array[mid] > x)
+//            return binarySearch(array, x, low, mid - 1);
+//
+//        // Search the right half
+//        return binarySearch(array, x, mid + 1, high);
+//    }
+//
+//    return -1;
+//}
 
 //Checks if a point lies on the left of an arbitrary angled line
 bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
@@ -286,17 +246,13 @@ void Game::update(float deltaTime)
     //Calculate "forcefield" around active tanks
     forcefield_hull.clear();
 
-    //Find first active tank (this loop is a bit disgusting, fix?)
+    //Find first active tank
     int first_active = 0;
-    for (Tank& tank : tanks)
-    {
-        if (tank.active)
-        {
-            break;
-        }
+    while (!tanks[first_active].active) {
         first_active++;
     }
     vec2 point_on_hull = tanks.at(first_active).position;
+
     //Find left most tank position
     for (Tank& tank : tanks)
     {
