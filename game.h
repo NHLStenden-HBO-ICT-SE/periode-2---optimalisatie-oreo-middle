@@ -7,6 +7,7 @@ class Tank;
 class Rocket;
 class Smoke;
 class Particle_beam;
+class ConvexHull;
 
 class Game
 {
@@ -46,6 +47,10 @@ class Game
     { /* implement if you want to handle keys */
     }
 
+    vec2* convexHullData(vec2* points, int count, bool closeThePath, int& resultCount);
+
+    vector<vec2>* ConvexHullManaged(vector<vec2> points, bool closeThePath);
+
   private:
     Surface* screen;
 
@@ -57,6 +62,7 @@ class Game
 
     Terrain background_terrain;
     std::vector<vec2> forcefield_hull;
+    vector<vec2>* R_forcefield_hull;
 
     Font* frame_count_font;
     long long frame_count = 0;
