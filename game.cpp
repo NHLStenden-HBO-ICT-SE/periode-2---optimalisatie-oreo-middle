@@ -267,37 +267,6 @@ void Game::update(float deltaTime)
         }
     }
 
-    //Calculate convex hull for 'rocket barrier'
-    for (Tank& tank : tanks)
-    {
-        if (tank.active)
-        {
-            forcefield_hull.push_back(point_on_hull);
-            vec2 endpoint = tanks.at(first_active).position;
-
-            for (Tank& tank : tanks)
-            {
-                if (tank.active)
-                {
-                    if ((endpoint == point_on_hull) || left_of_line(point_on_hull, endpoint, tank.position))
-                    {
-                        endpoint = tank.position;
-                    }
-                }
-            }
-            point_on_hull = endpoint;
-
-            if (endpoint == forcefield_hull.at(0))
-            {
-                break;
-            }
-        }
-    }
-
-    // ----------test--------   Calculate convex hull for 'rocket barrier'
-    
-    R_forcefield_hull = ConvexHullManaged(forcefield_hull, true);
-
     //Update rockets
     for (Rocket& rocket : rockets)
     {
@@ -321,15 +290,18 @@ void Game::update(float deltaTime)
         }
     }
 
+    //Calculate convex hull for 'rocket barrier'
+    R_forcefield_hull = ConvexHullManaged(forcefield_hull, true);
+
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
     for (Rocket& rocket : rockets)
     {
         if (rocket.active)
         {
-            for (size_t i = 0; i < forcefield_hull.size(); i++)
+            for (size_t i = 0; i < R_forcefield_hull->size(); i++)
             {
-                if (circle_segment_intersect(forcefield_hull.at(i), forcefield_hull.at((i + 1) % forcefield_hull.size()), rocket.position, rocket.collision_radius))
+                if (circle_segment_intersect(R_forcefield_hull->at(i), R_forcefield_hull->at((i + 1) % R_forcefield_hull->size()), rocket.position, rocket.collision_radius))
                 {
                     explosions.push_back(Explosion(&explosion, rocket.position));
                     rocket.active = false;

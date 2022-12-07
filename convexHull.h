@@ -23,6 +23,8 @@ private:
 	int q1HullCapacity, q2HullCapacity, q3HullCapacity, q4HullCapacity;
 	int q1HullCount = 0, q2HullCount = 0, q3HullCount = 0, q4HullCount = 0;
 
+	vec2* result; // for GetResultAsArray function
+
 	void calcConvexHull();
 	inline static void insertPoint(vec2*& boundingPoint, int index, vec2& point, int& count, int& capacity);
 	inline static void removeRange(vec2* boundingPoint, int iStart, int iEnd, int& count);

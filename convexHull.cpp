@@ -74,13 +74,13 @@ void ConvexHull::calcConvexHull() {
 		}
 
 		//top
-		if (point.x <= q1point2.x) {
-			if (point.x == q1point2.x) {
-				if (point.y > q1point2.y) {
-					q1point2 = point;
-				}
-				else if (point.y < q2point1.y) {
+		if (point.y >= q1point2.y) {
+			if (point.y == q1point2.y) {
+				if (point.x < q2point1.x) {
 					q2point1 = point;
+				}
+				else if (point.x > q2point1.x) {
+					q1point2 = point;
 				}
 			}
 			else {
@@ -90,12 +90,12 @@ void ConvexHull::calcConvexHull() {
 		}
 
 		//bottom
-		if (point.x <= q3point2.x) {
-			if (point.x == q3point2.x) {
-				if (point.y > q3point2.y) {
+		if (point.y <= q3point2.y) {
+			if (point.y == q3point2.y) {
+				if (point.x < q3point2.x) {
 					q3point2 = point;
 				}
-				else if (point.y < q4point1.y) {
+				else if (point.x > q4point1.x) {
 					q4point1 = point;
 				}
 			}
@@ -186,9 +186,9 @@ void ConvexHull::calcConvexHull() {
 			high = q1HullCount;
 
 			while (low < high-1) {
-				index = ((low - high) >> 1) + low;
+				index = ((high - low) >> 1) + low;
 
-				if (point.x > q1Hullpoints[index].x && point.y > q1Hullpoints[index].y) { // does quadrant contain point?
+				if (point.x <= q1Hullpoints[index].x && point.y <= q1Hullpoints[index].y) { // does quadrant contain point?
 					goto currentPointNotPartOfq1Hull;
 				}
 				else if (point.x > q1Hullpoints[index].x) {
@@ -241,14 +241,14 @@ void ConvexHull::calcConvexHull() {
 	currentPointNotPartOfq1Hull:
 
 		//quadrant 2 calc
-		if (point.x > q2originPoint.x && point.y > q2originPoint.y) { // if point is in the first quadrant
+		if (point.x < q2originPoint.x && point.y > q2originPoint.y) { // if point is in the first quadrant
 			low = 0;
 			high = q2HullCount;
 
 			while (low < high - 1) {
-				index = ((low - high) >> 1) + low;
+				index = ((high - low) >> 1) + low;
 
-				if (point.x > q2Hullpoints[index].x && point.y > q2Hullpoints[index].y) { // does quadrant contain point?
+				if (point.x >= q2Hullpoints[index].x && point.y <= q2Hullpoints[index].y) { // does quadrant contain point?
 					goto currentPointNotPartOfq2Hull;
 				}
 				else if (point.x > q2Hullpoints[index].x) {
@@ -302,21 +302,21 @@ void ConvexHull::calcConvexHull() {
 	currentPointNotPartOfq2Hull:
 
 		//quadrant 3 calc
-		if (point.x > q3originPoint.x && point.y > q3originPoint.y) { // if point is in the first quadrant
+		if (point.x < q3originPoint.x && point.y < q3originPoint.y) { // if point is in the first quadrant
 			low = 0;
 			high = q3HullCount;
 
 			while (low < high - 1) {
-				index = ((low - high) >> 1) + low;
+				index = ((high - low) >> 1) + low;
 
-				if (point.x > q3Hullpoints[index].x && point.y > q3Hullpoints[index].y) { // does quadrant contain point?
+				if (point.x >= q3Hullpoints[index].x && point.y >= q3Hullpoints[index].y) { // does quadrant contain point?
 					goto currentPointNotPartOfq3Hull;
 				}
-				else if (point.x > q3Hullpoints[index].x) {
+				else if (point.x < q3Hullpoints[index].x) {
 					high = index;
 					continue;
 				}
-				else if (point.x < q3Hullpoints[index].x) {
+				else if (point.x > q3Hullpoints[index].x) {
 					low = index;
 					continue;
 				}
@@ -362,21 +362,21 @@ void ConvexHull::calcConvexHull() {
 	currentPointNotPartOfq3Hull:
 
 		//quadrant 4 calc
-		if (point.x > q4originPoint.x && point.y > q4originPoint.y) { // if point is in the first quadrant
+		if (point.x > q4originPoint.x && point.y < q4originPoint.y) { // if point is in the first quadrant
 			low = 0;
 			high = q4HullCount;
 
 			while (low < high - 1) {
-				index = ((low - high) >> 1) + low;
+				index = ((high - low) >> 1) + low;
 
-				if (point.x > q4Hullpoints[index].x && point.y > q4Hullpoints[index].y) { // does quadrant contain point?
+				if (point.x <= q4Hullpoints[index].x && point.y >= q4Hullpoints[index].y) { // does quadrant contain point?
 					goto currentPointNotPartOfq4Hull;
 				}
-				else if (point.x > q4Hullpoints[index].x) {
+				else if (point.x < q4Hullpoints[index].x) {
 					high = index;
 					continue;
 				}
-				else if (point.x < q4Hullpoints[index].x) {
+				else if (point.x > q4Hullpoints[index].x) {
 					low = index;
 					continue;
 				}
@@ -550,7 +550,7 @@ vec2* ConvexHull::getResultAsArray(int& pointCount) {
 		countOfFinalHullPoint++;
 	}
 
-	vec2* result = new vec2[countOfFinalHullPoint];
+	result = new vec2[countOfFinalHullPoint];
 
 	int resIndex = 0;
 
