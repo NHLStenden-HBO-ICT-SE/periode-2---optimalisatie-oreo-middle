@@ -260,10 +260,10 @@ void Game::update(float deltaTime)
         {
             forcefield_hull.push_back(tank.position);
 
-            /*if (tank.position.x <= point_on_hull.x)
+            if (tank.position.x <= point_on_hull.x) //--------old
             {
                 point_on_hull = tank.position;
-            }*/
+            }
         }
     }
 
@@ -290,8 +290,8 @@ void Game::update(float deltaTime)
         }
     }
 
-    //Calculate convex hull for 'rocket barrier'
-    R_forcefield_hull = ConvexHullManaged(forcefield_hull, true);
+    //Calculate convex hull for 'rocket barrier' ---------updated
+    //R_forcefield_hull = ConvexHullManaged(forcefield_hull, true);
 
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)

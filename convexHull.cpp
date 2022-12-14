@@ -23,150 +23,149 @@ ConvexHull::~ConvexHull() {
 
 void ConvexHull::calcConvexHull() {
 
-	// find the quadrant limits
+	// find the quadrant x and y limits --- minimal value = 1 & maximal value = 2
 	vec2* boundingPT = _boundingPoints;
 
 	// for every quadrant 2 points
-	vec2 q1point1 = *boundingPT;
-	vec2 q1point2 = *boundingPT;
-	vec2 q2point1 = *boundingPT;
-	vec2 q2point2 = *boundingPT;
-	vec2 q3point1 = *boundingPT;
-	vec2 q3point2 = *boundingPT;
-	vec2 q4point1 = *boundingPT;
-	vec2 q4point2 = *boundingPT;
+	vec2 q1maxX = *boundingPT;
+	vec2 q1maxY = *boundingPT;
+	vec2 q2maxY = *boundingPT;
+	vec2 q2maxX = *boundingPT;
+	vec2 q3maxX = *boundingPT;
+	vec2 q3maxY = *boundingPT;
+	vec2 q4maxY = *boundingPT;
+	vec2 q4maxX = *boundingPT; 
 
 	boundingPT++;
 
 	for (int n = _countOfPoints -1; n > 0; n--) {
 		vec2& point = *boundingPT;
 
-		//rightside
-		if (point.x >= q1point1.x) {
-			if (point.x == q1point1.x) {
-				if (point.y > q1point1.y) {
-					q1point1 = point;
+		//rightside 
+		if (point.x >= q1maxX.x) {
+			if (point.x == q1maxX.x) {
+				if (point.y < q1maxX.y) {
+					q1maxX = point;
 				}
-				else if(point.y < q4point2.y) {
-					q4point2 = point;
+				else if(point.y > q4maxX.y) {
+					q4maxX = point;
 				}
 			}
 			else {
-				q1point1 = point;
-				q4point2 = point;
+				q1maxX = point;
+				q4maxX = point;
 			}
 		}
 
-		//leftside
-		if (point.x <= q2point2.x) {
-			if (point.x == q2point2.x) {
-				if (point.y > q2point2.y) {
-					q2point2 = point;
+		//leftside 
+		if (point.x <= q2maxX.x) {
+			if (point.x == q2maxX.x) {
+				if (point.y < q2maxX.y) {
+					q2maxX = point;
 				}
-				else if (point.y < q3point1.y) {
-					q3point1 = point;
+				else if (point.y > q3maxX.y) {
+					q3maxX = point;
 				}
 			}
 			else {
-				q2point2 = point;
-				q3point1 = point;
+				q2maxX = point;
+				q3maxX = point;
 			}
 		}
 
-		//top
-		if (point.y >= q1point2.y) {
-			if (point.y == q1point2.y) {
-				if (point.x < q2point1.x) {
-					q2point1 = point;
+		//top 
+		if (point.y >= q1maxY.y) {
+			if (point.y == q1maxY.y) {
+				if (point.x > q1maxY.x) {
+					q1maxY = point;
 				}
-				else if (point.x > q2point1.x) {
-					q1point2 = point;
+				else if (point.x < q2maxY.x) {
+					q2maxY = point;
 				}
 			}
 			else {
-				q1point2 = point;
-				q2point1 = point;
+				q1maxY = point;
+				q2maxY = point;
 			}
 		}
 
 		//bottom
-		if (point.y <= q3point2.y) {
-			if (point.y == q3point2.y) {
-				if (point.x < q3point2.x) {
-					q3point2 = point;
+		if (point.y <= q3maxY.y) {
+			if (point.y == q3maxY.y) {
+				if (point.x < q3maxY.x) {
+					q3maxY = point;
 				}
-				else if (point.x > q4point1.x) {
-					q4point1 = point;
+				else if (point.x > q4maxY.x) {
+					q4maxY = point;
 				}
 			}
 			else {
-				q3point2 = point;
-				q4point1 = point;
+				q3maxY = point;
+				q4maxY = point;
 			}
 		}
 
 		boundingPT++;
 	}
 
-	vec2 q1originPoint = (q1point2.x, q1point1.y);
-	vec2 q2originPoint = (q2point1.x, q2point2.y);
-	vec2 q3originPoint = (q3point2.x, q3point1.y);
-	vec2 q4originPoint = (q4point1.x, q4point2.y);
+	q1originPoint = { q1maxY.x, q1maxX.y };
+	q2originPoint = { q2maxY.x, q2maxX.y };
+	q3originPoint = { q3maxY.x, q3maxX.y };
+	q4originPoint = { q4maxY.x, q4maxX.y };
 
-
-	//quadrant 1 init
+	//quadrant 1 init -- add a point that is certain it is inside the quadrant
 	q1HullCapacity = _qHullpointinitcount;
 	q1Hullpoints = new vec2[q1HullCapacity];
 
-	q1Hullpoints[0] = q1point1;
+	q1Hullpoints[0] = q1maxX;
 
-	if (q1point1.x == q1point2.x && q1point1.y == q1point2.y) {
+	if (q1maxX.x == q1maxY.x && q1maxX.y == q1maxY.y) {
 		q1HullCount = 1;
 	}
 	else {
-		q1Hullpoints[1] = q1point2;
+		q1Hullpoints[1] = q1maxY;
 		q1HullCount = 2;
 	}
 
-	//quadrant 2 init
+	//quadrant 2 init -- add a point that is certain it is inside the quadrant
 	q2HullCapacity = _qHullpointinitcount;
 	q2Hullpoints = new vec2[q2HullCapacity];
 
-	q2Hullpoints[0] = q2point1;
+	q2Hullpoints[0] = q2maxY;
 
-	if (q2point1.x == q2point2.x && q2point1.y == q2point2.y) {
+	if (q2maxY.x == q2maxX.x && q2maxY.y == q2maxX.y) {
 		q2HullCount = 1;
 	}
 	else {
-		q2Hullpoints[1] = q2point2;
+		q2Hullpoints[1] = q2maxX;
 		q2HullCount = 2;
 	}
 
-	//quadrant 3 init
+	//quadrant 3 init -- add a point that is certain it is inside the quadrant
 	q3HullCapacity = _qHullpointinitcount;
 	q3Hullpoints = new vec2[q3HullCapacity];
 
-	q3Hullpoints[0] = q3point1;
+	q3Hullpoints[0] = q3maxX;
 
-	if (q3point1.x == q3point2.x && q3point1.y == q3point2.y) {
+	if (q3maxX.x == q3maxY.x && q3maxX.y == q3maxY.y) {
 		q3HullCount = 1;
 	}
 	else {
-		q3Hullpoints[1] = q3point2;
+		q3Hullpoints[1] = q3maxY;
 		q3HullCount = 2;
 	}
 
-	//quadrant 4 init
+	//quadrant 4 init -- add a point that is certain it is inside the quadrant
 	q4HullCapacity = _qHullpointinitcount;
 	q4Hullpoints = new vec2[q4HullCapacity];
 
-	q4Hullpoints[0] = q4point1;
+	q4Hullpoints[0] = q4maxY;
 
-	if (q4point1.x == q4point2.x && q4point1.y == q4point2.y) {
+	if (q4maxY.x == q4maxX.x && q4maxY.y == q4maxX.y) {
 		q4HullCount = 1;
 	}
 	else {
-		q4Hullpoints[1] = q4point2;
+		q4Hullpoints[1] = q4maxX;
 		q4HullCount = 2;
 	}
 
@@ -185,7 +184,7 @@ void ConvexHull::calcConvexHull() {
 			low = 0;
 			high = q1HullCount;
 
-			while (low < high-1) {
+			while (low < high - 1) {
 				index = ((high - low) >> 1) + low;
 
 				if (point.x <= q1Hullpoints[index].x && point.y <= q1Hullpoints[index].y) { // does quadrant contain point?
@@ -241,7 +240,7 @@ void ConvexHull::calcConvexHull() {
 	currentPointNotPartOfq1Hull:
 
 		//quadrant 2 calc
-		if (point.x < q2originPoint.x && point.y > q2originPoint.y) { // if point is in the first quadrant
+		if (point.x < q2originPoint.x && point.y > q2originPoint.y) { // if point is in the second quadrant
 			low = 0;
 			high = q2HullCount;
 
@@ -302,7 +301,7 @@ void ConvexHull::calcConvexHull() {
 	currentPointNotPartOfq2Hull:
 
 		//quadrant 3 calc
-		if (point.x < q3originPoint.x && point.y < q3originPoint.y) { // if point is in the first quadrant
+		if (point.x < q3originPoint.x && point.y < q3originPoint.y) { // if point is in the third quadrant
 			low = 0;
 			high = q3HullCount;
 
@@ -362,7 +361,7 @@ void ConvexHull::calcConvexHull() {
 	currentPointNotPartOfq3Hull:
 
 		//quadrant 4 calc
-		if (point.x > q4originPoint.x && point.y < q4originPoint.y) { // if point is in the first quadrant
+		if (point.x > q4originPoint.x && point.y < q4originPoint.y) { // if point is in the fourth quadrant
 			low = 0;
 			high = q4HullCount;
 
