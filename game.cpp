@@ -1,7 +1,9 @@
 #include "precomp.h" // include (only) this in every .cpp file
 
-constexpr auto num_tanks_blue = 2048;
-constexpr auto num_tanks_red = 2048;
+//constexpr auto num_tanks_blue = 2048;
+//constexpr auto num_tanks_red = 2048;
+constexpr auto num_tanks_blue = 5;
+constexpr auto num_tanks_red = 5;
 
 constexpr auto tank_max_health = 1000;
 constexpr auto rocket_hit_value = 60;
@@ -40,6 +42,13 @@ const static vec2 rocket_size(6, 6);
 
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
+
+int cellwidth = 7, cellheight = 7;
+const int gridRowCount = floor(SCRHEIGHT / cellwidth);
+const int gridCollCount = floor(SCRWIDTH / cellheight);
+
+vector<int> row(gridCollCount, 0);
+vector<vector<int>> grid(gridRowCount, row);
 
 // -----------------------------------------------------------
 // Initialize the simulation state
@@ -184,6 +193,21 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
     return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
+void Game::tankCollisionWithTank(int row, int col, Tank& tank, int tankIndex) {
+    vec2 other_tankPos = tanks.at(tankIndex).get_position();
+
+    vec2 dir = tank.get_position() - other_tankPos;
+    float dir_squared_len = dir.sqr_length();
+
+    float col_squared_len = (tank_radius + tank_radius);
+    col_squared_len *= col_squared_len;
+
+    if (dir_squared_len < col_squared_len)
+    {
+        tank.push(dir.normalized(), 1.f);
+    }
+}
+
 // -----------------------------------------------------------
 // Update the game state:
 // Move all objects
@@ -194,8 +218,8 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
 void Game::update(float deltaTime)
 {
 
-    //Check tank collision and nudge tanks away from each other
-    for (Tank& tank : tanks)
+    //Check tank collision and nudge tanks away from each other ----------------old
+    /*for (Tank& tank : tanks)
     {
         if (tank.active)
         {
@@ -215,7 +239,56 @@ void Game::update(float deltaTime)
                 }
             }
         }
+    }*/
+
+    //Initialize grid
+    //grid.clear();
+    
+    for (int i = 0; i < grid.size()-1; i++) {
+        for (int j = 0; j < grid[i].size()-1; j++) {
+            grid[i][j] = -1;
+        }
     }
+
+    int tankIndex = 0;
+    //Fill grid with tank index and check for collision if they are in the same grid cell
+    for (Tank& tank : tanks) {
+        if (tank.active) {
+            vec2 tankpos = tank.get_position();
+            int mincol = floor((tankpos.x - tank.get_collision_radius() - SCRWIDTH) / cellwidth) + gridCollCount;
+            int minrow = floor((tankpos.y - tank.get_collision_radius() - SCRHEIGHT) / cellheight) + gridRowCount;
+            int maxcol = floor((tankpos.x + tank.get_collision_radius() - SCRWIDTH) / cellwidth) + gridCollCount;
+            int maxrow = floor((tankpos.y + tank.get_collision_radius() - SCRHEIGHT) / cellheight) + gridRowCount;
+
+            if (grid[minrow][mincol] == -1) {
+                grid[minrow][mincol] = tankIndex;
+            }
+            else if (grid[minrow][mincol] != tankIndex)
+                tankCollisionWithTank(minrow, mincol, tank, grid[minrow][mincol]);
+
+            if (grid[maxrow][mincol] == -1) {
+                grid[maxrow][mincol] = tankIndex;
+            }
+            else if (grid[maxrow][mincol] != tankIndex)
+                tankCollisionWithTank(maxrow, mincol, tank, grid[minrow][mincol]);
+
+            if (grid[minrow][maxcol] == -1) {
+                grid[minrow][maxcol] = tankIndex;
+            }
+            else if (grid[minrow][maxcol] != tankIndex)
+                tankCollisionWithTank(minrow, maxcol, tank, grid[minrow][maxcol]);
+
+            if (grid[maxrow][maxcol] == -1) {
+                grid[maxrow][maxcol] = tankIndex;
+            }
+            else if (grid[maxrow][maxcol] != tankIndex)
+                tankCollisionWithTank(maxrow, maxcol, tank, grid[maxrow][maxcol]);
+
+            
+        }
+        tankIndex++;
+    }
+
 
     //Update tanks
     for (Tank& tank : tanks)
@@ -294,14 +367,14 @@ void Game::update(float deltaTime)
     //R_forcefield_hull = ConvexHullManaged(forcefield_hull, true);
 
     //Disable rockets if they collide with the "forcefield"
-    //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
+    //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside) --------------old
     for (Rocket& rocket : rockets)
     {
         if (rocket.active)
         {
-            for (size_t i = 0; i < R_forcefield_hull->size(); i++)
+            for (size_t i = 0; i < forcefield_hull.size(); i++)
             {
-                if (circle_segment_intersect(R_forcefield_hull->at(i), R_forcefield_hull->at((i + 1) % R_forcefield_hull->size()), rocket.position, rocket.collision_radius))
+                if (circle_segment_intersect(forcefield_hull.at(i), forcefield_hull.at((i + 1) % forcefield_hull.size()), rocket.position, rocket.collision_radius))
                 {
                     explosions.push_back(Explosion(&explosion, rocket.position));
                     rocket.active = false;
@@ -309,8 +382,6 @@ void Game::update(float deltaTime)
             }
         }
     }
-
-
 
     //Remove exploded rockets with remove erase idiom
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
