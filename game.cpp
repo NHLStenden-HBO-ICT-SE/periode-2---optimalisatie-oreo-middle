@@ -295,29 +295,18 @@ void Game::update(float deltaTime)
         smoke.tick();
     }
 
-    //Calculate "forcefield" around active tanks
+    //"forcefield" points around active tanks
     forcefield_hull.clear();
-
-    //Find first active tank
-    int first_active = 0;
-    while (!tanks[first_active].active) {
-        first_active++;
-    }
-    vec2 point_on_hull = tanks.at(first_active).position;
-
-    //Find left most tank position
     for (Tank& tank : tanks)
     {
         if (tank.active)
         {
             forcefield_hull.push_back(tank.position);
-
-            if (tank.position.x <= point_on_hull.x) //--------old
-            {
-                point_on_hull = tank.position;
-            }
         }
     }
+
+    //Calculate convex hull for 'rocket barrier'
+    R_forcefield_hull = ConvexHullManaged(forcefield_hull, true);
 
     //Update rockets
     for (Rocket& rocket : rockets)
@@ -341,9 +330,7 @@ void Game::update(float deltaTime)
             }
         }
     }
-
-    //Calculate convex hull for 'rocket barrier' ---------updated
-    R_forcefield_hull = ConvexHullManaged(forcefield_hull, true);
+    
 
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
