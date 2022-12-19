@@ -11,7 +11,7 @@ constexpr auto tank_max_speed = 1.0;
 
 constexpr auto health_bar_width = 70;
 
-constexpr auto max_frames = 2000;
+constexpr auto max_frames = 1000;
 
 //Global performance timer
 constexpr auto REF_PERFORMANCE = 66536.9; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
@@ -192,11 +192,11 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
 }
 
 //Checks collision between tanks. If there is a collision, nudge tanks away from each other
-void Game::tankCollisionWithTank(vector<int> otherTankindexes, int currentTankindex) {
+void Game::tankCollisionWithTank(vector<int> otherTankindexes, Tank& currentTank) {
     for (int& otherTankindex : otherTankindexes) {
-        if (currentTankindex == otherTankindex) continue;
+        if (&currentTank == &(tanks.at(otherTankindex))) continue;
 
-        vec2 tankpos = tanks.at(currentTankindex).get_position();
+        vec2 tankpos = currentTank.get_position();
 
         vec2 otherTankpos = tanks.at(otherTankindex).get_position();
 
@@ -208,30 +208,9 @@ void Game::tankCollisionWithTank(vector<int> otherTankindexes, int currentTankin
 
         if (dir_squared_len < col_squared_len)
         {
-            //tanks.at(currentTankindex).push(dir.normalized(), 1.f);
-
-            //Remove and add to cell in case the tank has been pushed inside a different cell
-            removeAndAddtoGrid(currentTankindex, true);
+            currentTank.push(dir.normalized(), 1.f);
         }
     }
-}
-
-//Calculate the position of the given tank on the grid
-void Game::removeAndAddtoGrid(int tankIndex, bool remove) {
-
-    if (remove == true) {
-        grid[topleft.y][topleft.x].tankindexes.erase(std::remove(grid[topleft.y][topleft.x].tankindexes.begin(), 
-                                                                grid[topleft.y][topleft.x].tankindexes.end(), 
-                                                                tankIndex), 
-                                                                grid[topleft.y][topleft.x].tankindexes.end());
-    }
-    
-    vec2 tankpos = tanks.at(tankIndex).get_position();
-
-    topleft.x = floor((tankpos.x - tank_radius) / cellwidth);
-    topleft.y = floor((tankpos.y - tank_radius) / cellheight);
-
-    grid[topleft.y][topleft.x].tankindexes.push_back(tankIndex);
 }
 
 // -----------------------------------------------------------
@@ -246,31 +225,48 @@ void Game::update(float deltaTime)
     grid.resize(gridRowCount, col);
     
     int tankIndex = 0;
+    //Initialize tanks into a cell on the grid
     for (Tank& tank : tanks) {
         if (tank.active) {
-            removeAndAddtoGrid(tankIndex, false);
+            vec2 tankpos = tank.get_position();
 
-            //topleft cell of current cell
-            tankCollisionWithTank(grid[topleft.y - 1][topleft.x - 1].tankindexes, tankIndex);
-            // top cell of current cell
-            tankCollisionWithTank(grid[topleft.y - 1][topleft.x].tankindexes, tankIndex);
-            // topleft cell of current cell
-            tankCollisionWithTank(grid[topleft.y - 1][topleft.x + 1].tankindexes, tankIndex);
-            // left cell of current cell
-            tankCollisionWithTank(grid[topleft.y][topleft.x - 1].tankindexes, tankIndex);
-            // current cell
-            tankCollisionWithTank(grid[topleft.y][topleft.x].tankindexes, tankIndex);
-            // right cell of current cell
-            tankCollisionWithTank(grid[topleft.y][topleft.x + 1].tankindexes, tankIndex);
-            // bottomleft cell of current cell
-            tankCollisionWithTank(grid[topleft.y + 1][topleft.x - 1].tankindexes, tankIndex);
-            // bottom cel of current cell
-            tankCollisionWithTank(grid[topleft.y + 1][topleft.x].tankindexes, tankIndex);
-            // bottom right cell of current cell
-            tankCollisionWithTank(grid[topleft.y + 1][topleft.x + 1].tankindexes, tankIndex);
+            gridCell.x = floor(tankpos.x / cellwidth);
+            gridCell.y = floor(tankpos.y / cellheight);
+
+            grid[gridCell.y][gridCell.x].tankindexes.push_back(tankIndex);
         }
         tankIndex++;
     }
+
+    //Check collision for every tank with its neigbor grid cells (9 total)
+    for (Tank& tank : tanks) {
+        if (tank.active) {
+            vec2 tankpos = tank.get_position();
+
+            gridCell.x = floor(tankpos.x / cellwidth);
+            gridCell.y = floor(tankpos.y / cellheight);
+
+            //topleft cell of current cell
+            tankCollisionWithTank(grid[gridCell.y - 1][gridCell.x - 1].tankindexes, tank);
+            // top cell of current cell
+            tankCollisionWithTank(grid[gridCell.y - 1][gridCell.x].tankindexes, tank);
+            // topleft cell of current cell
+            tankCollisionWithTank(grid[gridCell.y - 1][gridCell.x + 1].tankindexes, tank);
+            // left cell of current cell
+            tankCollisionWithTank(grid[gridCell.y][gridCell.x - 1].tankindexes, tank);
+            // current cell
+            tankCollisionWithTank(grid[gridCell.y][gridCell.x].tankindexes, tank);
+            // right cell of current cell
+            tankCollisionWithTank(grid[gridCell.y][gridCell.x + 1].tankindexes, tank);
+            // bottomleft cell of current cell
+            tankCollisionWithTank(grid[gridCell.y + 1][gridCell.x - 1].tankindexes, tank);
+            // bottom cel of current cell
+            tankCollisionWithTank(grid[gridCell.y + 1][gridCell.x].tankindexes, tank);
+            // bottom right cell of current cell
+            tankCollisionWithTank(grid[gridCell.y + 1][gridCell.x + 1].tankindexes, tank);
+        }
+    }
+
     grid.clear();
 
     //Update tanks
@@ -286,7 +282,7 @@ void Game::update(float deltaTime)
             {
                 Tank& target = find_closest_enemy(tank);
 
-                rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+                //rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
 
                 tank.reload_rocket();
             }
