@@ -71,9 +71,19 @@ class Game
 
     //Checks if a point lies on the left of an arbitrary angled line
     bool left_of_line(vec2 line_start, vec2 line_end, vec2 point);
-    void tankCollisionWithTank(int row, int col, Tank& tank, int tankIndex);
+    //void tankCollisionWithTank(int row, int col, Tank& tank, int tankIndex);
+    void tankCollisionWithTank(vector<int> otherTankIndexes, int currentTankindex);
+    void removeAndAddtoGrid(int tankIndex, bool remove);
 
+    int minrow, maxrow, mincol, maxcol;
+    point center, topleft, topright, bottomleft, bottomright;
+    int index;
+};
 
+struct cell 
+{
+    vector<int> tankindexes;
+    vector<int> bulletindexes;
 };
 
 }; // namespace Tmpl8

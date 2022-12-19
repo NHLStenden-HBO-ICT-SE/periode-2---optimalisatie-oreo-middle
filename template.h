@@ -146,6 +146,14 @@ class vec2 // adapted from https://github.com/dcow/RayTracer
     float dot(const vec2& operand) const { return x * operand.x + y * operand.y; }
 };
 
+typedef int number;
+typedef struct {
+    number x;
+    number y;
+} point;
+
+#define compare_points(a, b) (((a).x == (b).x) && ((a).y == (b).y))
+
 class Rectangle2D
 {
 
