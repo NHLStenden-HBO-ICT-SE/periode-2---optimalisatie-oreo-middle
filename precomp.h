@@ -62,6 +62,7 @@
 #include <cassert>
 #include <cinttypes>
 #include <cmath>
+#include <math.h>
 #include <cstdio>
 #include <cstdlib>
 
@@ -90,6 +91,7 @@ using namespace Tmpl8;
 #include "explosion.h"
 #include "particle_beam.h"
 #include "convexHull.h"
+#include "quadtree.h"
 
 #include "game.h"
 

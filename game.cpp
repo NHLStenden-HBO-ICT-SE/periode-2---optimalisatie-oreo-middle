@@ -103,16 +103,19 @@ void Game::shutdown()
 // -----------------------------------------------------------
 // Iterates through all tanks and returns the closest enemy tank for the given tank
 // -----------------------------------------------------------
-Tank& Game::find_closest_enemy(Tank& current_tank)
+vec2& Game::find_closest_enemy(Tank& tank)
 {
+    //TODO: implement quadtree search for closest to tank.position
+
+
     float closest_distance = numeric_limits<float>::infinity();
     int closest_index = 0;
 
     for (int i = 0; i < tanks.size(); i++)
     {
-        if (tanks.at(i).allignment != current_tank.allignment && tanks.at(i).active)
+        if (tanks.at(i).allignment != tank.allignment && tanks.at(i).active)
         {
-            float sqr_dist = fabsf((tanks.at(i).get_position() - current_tank.get_position()).sqr_length());
+            float sqr_dist = fabsf((tanks.at(i).get_position() - tank.get_position()).sqr_length());
             if (sqr_dist < closest_distance)
             {
                 closest_distance = sqr_dist;
@@ -121,65 +124,65 @@ Tank& Game::find_closest_enemy(Tank& current_tank)
         }
     }
 
-    return tanks.at(closest_index);
+    return tanks.at(closest_index).get_position();
 }
 
-//void Game::mergeSortInterval(vector<float>& vec, int l, int mid, int r) {
-//    vector<float> temp;
-//
-//    int lpos = l;
-//    int rpos = mid + 1;
-//
-//    while (lpos <= mid && rpos <= r) {
-//        if (vec[lpos] < vec[rpos]) {
-//            temp.push_back(vec[lpos]);
-//            lpos++;
-//        }
-//        else {
-//            temp.push_back(vec[rpos]);
-//            rpos++;
-//        }
-//    }
-//    while (lpos <= mid) {
-//        temp.push_back(vec[lpos]);
-//        lpos++;
-//    }
-//    while (rpos <= r) {
-//        temp.push_back(vec[rpos]);
-//        rpos++;
-//    }
-//    
-//    for (int i = l; i <= r; i++) {
-//        int j = i - l;
-//        vec[i] = temp[j];
-//        /*cout << i << endl;*/
-//    }
-//}
-//
-//void Game::mergeSort(vector<float>& vec, int l, int r) {
-//    int mid = (l + r) / 2;
-//    if (l < r) {
-//        mergeSort(vec, l, mid);
-//        mergeSort(vec, mid+1, r);
-//        mergeSortInterval(vec, l, mid, r);
-//        /*cout << mid << endl;*/
-//    }
-//}
-//
-//int Game::binarySearch(int array[], int x, int low, int high) {
+void Game::mergeSortInterval(vector<int>& vec, int l, int mid, int r) {
+    vector<float> temp;
+
+    int lpos = l;
+    int rpos = mid + 1;
+
+    while (lpos <= mid && rpos <= r) {
+        if (vec[lpos] <= vec[rpos]) {
+            temp.push_back(vec[lpos]);
+            lpos++;
+        }
+        else {
+            temp.push_back(vec[rpos]);
+            rpos++;
+        }
+    }
+    while (lpos <= mid) {
+        temp.push_back(vec[lpos]);
+        lpos++;
+    }
+    while (rpos <= r) {
+        temp.push_back(vec[rpos]);
+        rpos++;
+    }
+    
+    for (int i = l; i <= r; i++) {
+        int j = i - l;
+        vec[i] = temp[j];
+    }
+}
+
+void Game::mergeSort(vector<int>& vec, int l, int r) {
+    int mid = (l + r) / 2;
+    if (l < r) {
+        mergeSort(vec, l, mid);
+        mergeSort(vec, mid+1, r);
+        mergeSortInterval(vec, l, mid, r);
+        /*cout << mid << endl;*/
+    }
+}
+
+//int Game::binarySearch(vector<int> list, int x, int low, int high) {
 //    if (high >= low) {
 //        int mid = low + (high - low) / 2;
 //
 //        // If found at mid, then return it
-//        if (array[mid] == x)
+//        if (list[mid] == x)
 //            return mid;
 //
 //        // Search the left half
-//        if (array[mid] > x)
-//            return binarySearch(array, x, low, mid - 1);
+//        if (list[mid] > x)
+//            return binarySearch(list, x, low, mid - 1);
 //
 //        // Search the right half
-//        return binarySearch(array, x, mid + 1, high);
+//        if (list[mid] < x)
+//            return binarySearch(list, x, mid + 1, high);
 //    }
 //
 //    return -1;
@@ -269,6 +272,29 @@ void Game::update(float deltaTime)
 
     grid.clear();
 
+    qtBlue = new Quadtree();
+    qtRed = new Quadtree();
+
+    //Fill tank positionslist and quadtrees
+    for (Tank& tank : tanks) {
+        if (!tank.active) continue;
+        if (tank.allignment == BLUE) {
+            vec2 tankpos = tank.get_position();
+            blueTankposlist.push_back(tankpos);
+
+            //Add points to quadtree of blue tanks
+            qtBlue->add(tank.get_position());
+        }
+        else {
+            vec2 tankpos = tank.get_position();
+            redTankposlist.push_back(tankpos);
+
+            //Add points to quadtree of red tanks
+            qtRed->add(tank.get_position());
+        }
+    }
+    
+    
     //Update tanks
     for (Tank& tank : tanks)
     {
@@ -280,9 +306,9 @@ void Game::update(float deltaTime)
             //Shoot at closest target if reloaded
             if (tank.rocket_reloaded())
             {
-                Tank& target = find_closest_enemy(tank);
+                vec2 target = find_closest_enemy(tank);
 
-                //rockets.push_back(Rocket(tank.position, (target.get_position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+                rockets.push_back(Rocket(tank.position, (target - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
 
                 tank.reload_rocket();
             }
