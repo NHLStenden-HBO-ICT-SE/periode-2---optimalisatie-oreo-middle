@@ -79,8 +79,8 @@ class Game
     point gridCell;
     int index;
 
-    Quadtree* qtBlue;
-    Quadtree* qtRed;
+    Quadtree* qtBlue = new Quadtree();
+    Quadtree* qtRed = new Quadtree();
 };
 
 //Grid

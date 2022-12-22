@@ -272,8 +272,8 @@ void Game::update(float deltaTime)
 
     grid.clear();
 
-    qtBlue = new Quadtree();
-    qtRed = new Quadtree();
+    qtBlue->clear();
+    qtRed->clear();
 
     //Fill tank positionslist and quadtrees
     for (Tank& tank : tanks) {

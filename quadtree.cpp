@@ -65,6 +65,18 @@ void Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max) {
     //Search for point in quadtree
 }
 
+void Quadtree::clear(Node* node) {
+    node->points.clear();
+    node->leafnode = true;
+    node->empty = true;
+    for (int i = 0; i < node->children.size() -1; i++) {
+        if (node->children[i] != nullptr) {
+            clear(node->children[i].get());
+            node->children[i].reset();
+        }
+    }
+}
+
 //TODO: add remove function
 
 };
