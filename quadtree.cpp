@@ -17,29 +17,34 @@ int Quadtree::getQuadrant(vec2& p, vec2 min, vec2 max) {
     return -1;
 }
 
-void Quadtree::add(Node* node, vec2& p, vec2 min, vec2 max) {
+void Quadtree::add(Node* node, vec2& p, vec2 min, vec2 max, int depth) {
     
     if (node->leafnode && node->empty) {
         node->empty = false;
-        node->node_point = p;
+        node->points.push_back(p);
         return;
     }
 
     //Add node_point to other node
     if (!node->leafnode) {
         int i = getQuadrant(p, min, max);
-
         if(i != -1)
-            add(node->children[i].get(), p, min, max);
+            add(node->children[i].get(), p, min, max, depth + 1);
     }
 
     //If node_point already exists, return
-    if (!node->empty && p == node->node_point) return;
+    //if (!node->empty && p == node->points) return;
 
-    //If leafnode and not empty split current quadtree in 4
+    //If leafnode and not empty
     if (node->leafnode && !node->empty) {
-        split(node, min, max);
-        add(node, p, min, max);
+        //Check if quadtree is not at its max threshold or depth
+        if (depth >= MaxDepth || node->points.size() < Threshold) {
+            node->points.push_back(p);
+        }
+        else { //split current quadtree in 4
+            split(node, min, max); 
+            add(node, p, min, max, depth);
+        }
     }
 }
 
@@ -49,10 +54,11 @@ void Quadtree::split(Node* node, vec2 min, vec2 max) {
         child = std::make_unique<Node>();
     }
 
-    int i = getQuadrant(node->node_point, min, max);
-
-    if (i != -1)
-        node->children[i]->node_point = node->node_point;
+    for(vec2 point : node->points) {
+        int i = getQuadrant(point, min, max);
+        if (i != -1)
+            node->children[i]->points.push_back(point);
+    }
 }
 
 void Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max) {
