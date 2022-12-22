@@ -55,6 +55,10 @@ void Quadtree::split(Node* node, vec2 min, vec2 max) {
         node->children[i]->node_point = node->node_point;
 }
 
+void Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max) {
+    //Search for point in quadtree
+}
+
 //TODO: add remove function
 
 };

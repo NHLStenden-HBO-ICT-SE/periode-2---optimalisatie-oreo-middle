@@ -7,6 +7,7 @@ class Quadtree
 public:
     Quadtree() : mroot(std::make_unique<Node>()) {}
     void Quadtree::add(vec2 point) { add(mroot.get(), point, min, max); };
+    void Quadtree::search(vec2 point) { search(mroot.get(), point, min, max); };
 
 private:
     //array<unique_ptr<Quadtree>, 4> *children1 = nullptr; 
@@ -27,6 +28,7 @@ private:
     int Quadtree::getQuadrant(vec2& p, vec2 min, vec2 max);
     void Quadtree::add(Node* node, vec2& p, vec2 min, vec2 max);
     void Quadtree::split(Node* node, vec2 min, vec2 max);
+    void Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max);
 };
 
 }
