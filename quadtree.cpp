@@ -5,8 +5,8 @@ namespace Tmpl8 {
 
 int Quadtree::getQuadrant(vec2& p, vec2 min, vec2 max) {
     //Middle position of quadtree
-    int midx = (min.x - max.x) / 2;
-    int midy = (min.y - max.y) / 2;
+    int midx = min.x - (max.x / 2);
+    int midy = min.y - (max.y / 2);
 
     if (p.x <= midx && p.y <= midy) return 0; //Upper left
     if (p.x >= midx && p.y <= midy) return 1; //Upper right
@@ -53,16 +53,31 @@ void Quadtree::split(Node* node, vec2 min, vec2 max) {
     for (auto& child : node->children) { //Initalize 4 children
         child = std::make_unique<Node>();
     }
+    vector<vec2> newPoints;
 
     for(vec2 point : node->points) {
         int i = getQuadrant(point, min, max);
         if (i != -1)
             node->children[i]->points.push_back(point);
     }
+    node->points = std::move(newPoints);
 }
 
-void Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max) {
-    //Search for point in quadtree
+vector<vec2> Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max) {
+    vector<vec2> candidates;
+    if (!node->leafnode) {
+        int i = getQuadrant(p, min, max);
+        if (i != -1 && node->children[i].get() != nullptr)
+            candidates = search(node->children[i].get(), p, min, max);
+        else {
+            candidates = node->points;
+        }
+    }
+    if (node->leafnode) {
+        candidates = node->points;
+    }
+
+    return candidates;
 }
 
 void Quadtree::clear(Node* node) {

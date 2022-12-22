@@ -105,68 +105,70 @@ void Game::shutdown()
 // -----------------------------------------------------------
 vec2& Game::find_closest_enemy(Tank& tank)
 {
-    //TODO: implement quadtree search for closest to tank.position
+    vector<vec2> candidates;
 
+    if (tank.allignment == BLUE) {
+        candidates = qtRed->search(tank.get_position());
+    }
+    else {
+        candidates = qtBlue->search(tank.get_position());
+    }
 
+    //Find the closest of all candidates
     float closest_distance = numeric_limits<float>::infinity();
-    int closest_index = 0;
-
-    for (int i = 0; i < tanks.size(); i++)
-    {
-        if (tanks.at(i).allignment != tank.allignment && tanks.at(i).active)
+    vec2 closest_tankpos = (0,0);
+    for (vec2& candidate : candidates) {
+        float sqr_dist = fabsf((candidate - tank.get_position()).sqr_length());
+        if (sqr_dist < closest_distance)
         {
-            float sqr_dist = fabsf((tanks.at(i).get_position() - tank.get_position()).sqr_length());
-            if (sqr_dist < closest_distance)
-            {
-                closest_distance = sqr_dist;
-                closest_index = i;
-            }
+            closest_distance = sqr_dist;
+            closest_tankpos = candidate;
         }
     }
-
-    return tanks.at(closest_index).get_position();
+       
+    return closest_tankpos;
 }
 
-void Game::mergeSortInterval(vector<int>& vec, int l, int mid, int r) {
-    vector<float> temp;
-
-    int lpos = l;
-    int rpos = mid + 1;
-
-    while (lpos <= mid && rpos <= r) {
-        if (vec[lpos] <= vec[rpos]) {
-            temp.push_back(vec[lpos]);
-            lpos++;
-        }
-        else {
-            temp.push_back(vec[rpos]);
-            rpos++;
-        }
-    }
-    while (lpos <= mid) {
-        temp.push_back(vec[lpos]);
-        lpos++;
-    }
-    while (rpos <= r) {
-        temp.push_back(vec[rpos]);
-        rpos++;
-    }
-    
-    for (int i = l; i <= r; i++) {
-        int j = i - l;
-        vec[i] = temp[j];
-    }
-}
-
-void Game::mergeSort(vector<int>& vec, int l, int r) {
-    int mid = (l + r) / 2;
-    if (l < r) {
-        mergeSort(vec, l, mid);
-        mergeSort(vec, mid+1, r);
-        mergeSortInterval(vec, l, mid, r);
-        /*cout << mid << endl;*/
-    }
-}
+//void Game::mergeSortInterval(vector<int>& vec, int l, int mid, int r) {
+//    vector<float> temp;
+//
+//    int lpos = l;
+//    int rpos = mid + 1;
+//
+//    while (lpos <= mid && rpos <= r) {
+//        if (vec[lpos] <= vec[rpos]) {
+//            temp.push_back(vec[lpos]);
+//            lpos++;
+//        }
+//        else {
+//            temp.push_back(vec[rpos]);
+//            rpos++;
+//        }
+//    }
+//    while (lpos <= mid) {
+//        temp.push_back(vec[lpos]);
+//        lpos++;
+//    }
+//    while (rpos <= r) {
+//        temp.push_back(vec[rpos]);
+//        rpos++;
+//    }
+//    
+//    for (int i = l; i <= r; i++) {
+//        int j = i - l;
+//        vec[i] = temp[j];
+//    }
+//}
+//
+//void Game::mergeSort(vector<int>& vec, int l, int r) {
+//    int mid = (l + r) / 2;
+//    if (l < r) {
+//        mergeSort(vec, l, mid);
+//        mergeSort(vec, mid+1, r);
+//        mergeSortInterval(vec, l, mid, r);
+//        /*cout << mid << endl;*/
+//    }
+//}
 
 //int Game::binarySearch(vector<int> list, int x, int low, int high) {
 //    if (high >= low) {
@@ -275,22 +277,18 @@ void Game::update(float deltaTime)
     qtBlue->clear();
     qtRed->clear();
 
-    //Fill tank positionslist and quadtrees
+    //Fill quadtrees
     for (Tank& tank : tanks) {
         if (!tank.active) continue;
-        if (tank.allignment == BLUE) {
-            vec2 tankpos = tank.get_position();
-            blueTankposlist.push_back(tankpos);
-
+        if (tank.allignment == BLUE) {            
             //Add points to quadtree of blue tanks
-            qtBlue->add(tank.get_position());
-        }
-        else {
             vec2 tankpos = tank.get_position();
-            redTankposlist.push_back(tankpos);
-
+            qtBlue->add(tankpos);
+        }
+        else {            
             //Add points to quadtree of red tanks
-            qtRed->add(tank.get_position());
+            vec2 tankpos = tank.get_position();
+            qtRed->add(tankpos);            
         }
     }
     

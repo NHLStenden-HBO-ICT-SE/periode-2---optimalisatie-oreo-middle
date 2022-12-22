@@ -7,7 +7,7 @@ class Quadtree
 public:
     Quadtree() : mroot(std::make_unique<Node>()) {}
     void Quadtree::add(vec2 point) { add(mroot.get(), point, min, max, 0); };
-    void Quadtree::search(vec2 point) { search(mroot.get(), point, min, max); };
+    vector<vec2> Quadtree::search(vec2 point) { return search(mroot.get(), point, min, max); };
     void Quadtree::clear() { clear(mroot.get()); };
 
 private:
@@ -16,7 +16,7 @@ private:
     struct Node {
         array<unique_ptr<Node>, 4> children;
         vector<vec2> points;
-        bool leafnode = true; // Quadtree is a leafnode when there is max 1 point
+        bool leafnode = true;
         bool empty = true;
     };
 
@@ -32,7 +32,7 @@ private:
     int Quadtree::getQuadrant(vec2& p, vec2 min, vec2 max);
     void Quadtree::add(Node* node, vec2& p, vec2 min, vec2 max, int depth);
     void Quadtree::split(Node* node, vec2 min, vec2 max);
-    void Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max);
+    vector<vec2> Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max);
     void Quadtree::clear(Node* node);
 };
 
