@@ -3,10 +3,10 @@
 
 namespace Tmpl8 {
 
-int Quadtree::getQuadrant(vec2& p, vec2 min, vec2 max) {
+int Quadtree::getQuadrant(vec2& p, Boundries* boundries) {
     //Middle position of quadtree
-    int midx = min.x - (max.x / 2);
-    int midy = min.y - (max.y / 2);
+    int midx = boundries->minx + ((boundries->maxx - boundries->minx) / 2);
+    int midy = boundries->miny + ((boundries->maxy - boundries->miny) / 2);
 
     if (p.x <= midx && p.y <= midy) return 0; //Upper left
     if (p.x >= midx && p.y <= midy) return 1; //Upper right
@@ -17,8 +17,41 @@ int Quadtree::getQuadrant(vec2& p, vec2 min, vec2 max) {
     return -1;
 }
 
-void Quadtree::add(Node* node, vec2& p, vec2 min, vec2 max, int depth) {
-    
+void Quadtree::newBoundries(Boundries* boundries, int q) {
+    vec2 min = (boundries->minx, boundries->miny);
+
+    int midx = boundries->minx + ((boundries->maxx - boundries->minx) / 2);
+    int midy = boundries->miny + ((boundries->maxy - boundries->miny) / 2);
+
+    switch (q) {
+        case 0: //Upperleft
+            boundries->maxx = midx;
+            boundries->maxy = midy;
+            break;
+
+        case 1: //Upper right
+            boundries->minx = midx;
+            boundries->maxy = midy;
+            break;
+
+        case 2: //Lower left
+            boundries->maxx = midx;
+            boundries->miny = midy;
+            break;
+
+        case 3: //Lower right
+            boundries->minx = midx;
+            boundries->miny = midy;
+            break;
+    }
+}
+
+void Quadtree::add(Node* node, vec2& p, Boundries* boundries, int depth) { 
+    //For initializing first node
+    if (node->boundries == nullptr) { 
+        node->boundries = std::make_unique<Boundries>();
+    }
+
     if (node->leafnode && node->empty) {
         node->empty = false;
         node->points.push_back(p);
@@ -27,13 +60,12 @@ void Quadtree::add(Node* node, vec2& p, vec2 min, vec2 max, int depth) {
 
     //Add node_point to other node
     if (!node->leafnode) {
-        int i = getQuadrant(p, min, max);
-        if(i != -1)
-            add(node->children[i].get(), p, min, max, depth + 1);
+        int i = getQuadrant(p, boundries);
+        if (i != -1) {
+            add(node->children[i].get(), p, node->children[i]->boundries.get(), depth + 1);
+        }
+            
     }
-
-    //If node_point already exists, return
-    //if (!node->empty && p == node->points) return;
 
     //If leafnode and not empty
     if (node->leafnode && !node->empty) {
@@ -42,40 +74,46 @@ void Quadtree::add(Node* node, vec2& p, vec2 min, vec2 max, int depth) {
             node->points.push_back(p);
         }
         else { //split current quadtree in 4
-            split(node, min, max); 
-            add(node, p, min, max, depth);
+            split(node);
+            add(node, p, boundries, depth);
         }
     }
 }
 
-void Quadtree::split(Node* node, vec2 min, vec2 max) {
+void Quadtree::split(Node* node) {
     node->leafnode = false;
+    int i = 0;
     for (auto& child : node->children) { //Initalize 4 children
         child = std::make_unique<Node>();
+        child->boundries = std::make_unique<Boundries>();
+        child->boundries.get()->minx = node->boundries.get()->minx;
+        child->boundries.get()->miny = node->boundries.get()->miny;
+        child->boundries.get()->maxx = node->boundries.get()->maxx;
+        child->boundries.get()->maxy = node->boundries.get()->maxy;
+        newBoundries(child->boundries.get(), i);
+        i++;
     }
+
     vector<vec2> newPoints;
 
-    for(vec2 point : node->points) {
-        int i = getQuadrant(point, min, max);
-        if (i != -1)
+    for(vec2& point : node->points) {
+        int i = getQuadrant(point, node->boundries.get());
+        if (i != -1) {
             node->children[i]->points.push_back(point);
+        }
     }
     node->points = std::move(newPoints);
 }
 
-vector<vec2> Quadtree::search(Node* node, vec2& p, vec2 min, vec2 max) {
+vector<vec2> Quadtree::search(Node* node, vec2& p) {
     vector<vec2> candidates;
     if (!node->leafnode) {
-        int i = getQuadrant(p, min, max);
-        if (i != -1 && node->children[i].get() != nullptr)
-            candidates = search(node->children[i].get(), p, min, max);
-        else {
-            candidates = node->points;
+        int i = getQuadrant(p, node->boundries.get());
+        if (i != -1 && node->children[i].get() != nullptr) {
+            return search(node->children[i].get(), p);
         }
     }
-    if (node->leafnode) {
-        candidates = node->points;
-    }
+    candidates = node->points;
 
     return candidates;
 }
@@ -92,6 +130,6 @@ void Quadtree::clear(Node* node) {
     }
 }
 
-//TODO: add remove function
+//TODO: remove function
 
 };
