@@ -132,7 +132,7 @@ vector<vec2> Quadtree::search(Node* node, vec2& p) {
 Quadtree::Node* Quadtree::findNeighbourNodes(Node* node, int dir) {
     
     if (dir == 1) { // 1 is up
-        if (node == root.get()) return; // Return nothing if node is root
+        if (node == root.get()) return node; // Return nothing if node is root
 
         // No need to find parent when neigbor is in same quadrant
         if (node->parent->children[2].get() == node) {
@@ -158,7 +158,31 @@ Quadtree::Node* Quadtree::findNeighbourNodes(Node* node, int dir) {
 }
 
 vector<vec2> Quadtree::findNeighbourPoints(Node* node, int dir) {
+    if (node == nullptr) return {-1};
 
+    vector<Node*> smallNeighbours = {node};
+    vector<Node*> candidateNeighbours;
+    vector<vec2> candidatePoints;
+
+    if (dir == 1) {
+        while (smallNeighbours.size() > 0) {
+            if (smallNeighbours[0]->leafnode) {
+                candidateNeighbours.push_back(smallNeighbours[0]);
+            }
+            else {
+                smallNeighbours.push_back(smallNeighbours[0]->children[2].get());
+                smallNeighbours.push_back(smallNeighbours[0]->children[3].get());
+            }
+            smallNeighbours.erase(smallNeighbours.begin());
+        }
+        for (Node* node : candidateNeighbours) {
+            for (vec2& point : node->points) {
+                candidatePoints.push_back(point);
+            }
+        }
+
+        return candidatePoints;
+    }
 }
 
 void Quadtree::clear(Node* node) {

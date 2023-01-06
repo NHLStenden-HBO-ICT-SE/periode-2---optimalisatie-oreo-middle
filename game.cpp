@@ -107,7 +107,7 @@ vec2& Game::find_closest_enemy(Tank& tank)
 {
     vector<vec2> candidates;
 
-    if (tank.allignment == BLUE) {
+    if (tank.allignment == RED) {
         candidates = qtRed->search(tank.get_position());
     }
     else {
