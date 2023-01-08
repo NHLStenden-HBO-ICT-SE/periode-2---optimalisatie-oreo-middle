@@ -131,29 +131,59 @@ vector<vec2> Quadtree::search(Node* node, vec2& p) {
 
 Quadtree::Node* Quadtree::findNeighbourNodes(Node* node, int dir) {
     
-    if (dir == 1) { // 1 is up
-        if (node == root.get()) return node; // Return nothing if node is root
+    if (node == root.get()) return node; // Return nothing if node is root
 
-        // No need to find parent when neigbor is in same quadrant
-        if (node->parent->children[2].get() == node) {
-            return node->parent->children[0].get();
-        }
-        else if (node->parent->children[3].get() == node) {
-            return node->parent->children[1].get();
-        }
+    //The Directions and target nodeIndex --which is used to check if its coming from the right node and going to the right node (based on neighbour direction)
+    int hDir = 0, vDir = 0, tNode1 = 0, tNode2 = 0; 
+    switch (dir) {
+        //Horizontal and vertical
+    case 1:
+        hDir = 2, vDir = 3, tNode1 = 0, tNode2 = 1;
+        break;
+    case 3:
+        hDir = 1, vDir = 3, tNode1 = 0, tNode2 = 2;
+        break;
+    case 4:
+        hDir = 0, vDir = 2, tNode1 = 1, tNode2 = 3;
+        break;
+    case 6:
+        hDir = 0, vDir = 1, tNode1 = 2, tNode2 = 3;
+        break;
 
-        // If neighbor is not in same quadrant search in parent quadrant
-        Node* neighborCandidate = findNeighbourNodes(node->parent, dir);
-        if (neighborCandidate == nullptr || neighborCandidate->leafnode)
-            return neighborCandidate;
-
-        if (neighborCandidate->children[0].get() == node) {
-            return neighborCandidate->children[2].get();
-        }
-        else
-            return neighborCandidate->children[3].get();
+    //Diagonal --There is only 1 possible node (dir- and target node) when checking diagonaly
+    vDir = -1, tNode2 = -1;
+    case 0:
+        hDir = 3, tNode1 = 0;
+        break;
+    case 2:
+        hDir = 2, tNode1 = 1;
+        break;
+    case 5:
+        hDir = 1, tNode1 = 2;
+        break;
+    case 7:
+        hDir = 0, tNode1 = 3;
+        break;
     }
-    // --TODO: loop through all directions instead of only '1'
+
+    // No need to find parent when neigbor is in same quadrant
+    if (node->parent->children[hDir].get() == node) {
+        return node->parent->children[tNode1].get();
+    }
+    else if (vDir != -1 && node->parent->children[vDir].get() == node) {
+        return node->parent->children[tNode2].get();
+    }
+
+    // If neighbor is not in same quadrant search in parent quadrant
+    Node* neighborCandidate = findNeighbourNodes(node->parent, dir);
+    if (neighborCandidate == nullptr || neighborCandidate->leafnode)
+        return neighborCandidate;
+
+    if (neighborCandidate->children[tNode1].get() == node) {
+        return neighborCandidate->children[hDir].get();
+    }
+    else if (vDir != -1)
+        return neighborCandidate->children[vDir].get();
     
 }
 
@@ -164,25 +194,55 @@ vector<vec2> Quadtree::findNeighbourPoints(Node* node, int dir) {
     vector<Node*> candidateNeighbours;
     vector<vec2> candidatePoints;
 
-    if (dir == 1) {
-        while (smallNeighbours.size() > 0) {
-            if (smallNeighbours[0]->leafnode) {
-                candidateNeighbours.push_back(smallNeighbours[0]);
-            }
-            else {
-                smallNeighbours.push_back(smallNeighbours[0]->children[2].get());
-                smallNeighbours.push_back(smallNeighbours[0]->children[3].get());
-            }
-            smallNeighbours.erase(smallNeighbours.begin());
-        }
-        for (Node* node : candidateNeighbours) {
-            for (vec2& point : node->points) {
-                candidatePoints.push_back(point);
-            }
-        }
+    int hDir = 0, vDir = 0;
+    switch (dir) {
+        //Horizontal and vertical
+        case 1:
+            hDir = 2, vDir = 3;
+            break;
+        case 3:
+            hDir = 1, vDir = 3;
+            break;
+        case 4:
+            hDir = 0, vDir = 2;
+            break;
+        case 6:
+            hDir = 0, vDir = 1;
+            break;
 
-        return candidatePoints;
+        //Diagonal
+        case 0:
+            hDir = 3, vDir = -1;
+            break;
+        case 2:
+            hDir = 2, vDir = -1;
+            break;
+        case 5:
+            hDir = 1, vDir = -1;
+            break;
+        case 7:
+            hDir = 0, vDir = -1;
+            break;
     }
+
+    while (smallNeighbours.size() > 0) {
+        if (smallNeighbours[0]->leafnode) {
+            candidateNeighbours.push_back(smallNeighbours[0]);
+        }
+        else {
+            smallNeighbours.push_back(smallNeighbours[0]->children[hDir].get());
+            if (vDir != -1)
+                smallNeighbours.push_back(smallNeighbours[0]->children[vDir].get());
+        }
+        smallNeighbours.erase(smallNeighbours.begin());
+    }
+    for (Node* node : candidateNeighbours) {
+        for (vec2& point : node->points) {
+            candidatePoints.push_back(point);
+        }
+    }
+
+    return candidatePoints;
 }
 
 void Quadtree::clear(Node* node) {
