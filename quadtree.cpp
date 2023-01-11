@@ -115,10 +115,16 @@ vector<vec2> Quadtree::search(Node* node, vec2& p) {
         }
     }
 
+    if (node->points.size() > 0) {
+        return node->points;
+    }
+
     vector<Node*> neighbournodes;
     vector<vec2> neighbourpoints;
     for (int dir = 0; dir < 8; dir++) {
         neighbournodes.push_back(findNeighbourNodes(node, dir));
+
+        if (neighbournodes[dir] == node) continue;
 
         vector<vec2> tempNeighbourpoints = findNeighbourPoints(neighbournodes[dir], dir);
         for (vec2& point : tempNeighbourpoints) {
@@ -179,6 +185,10 @@ Quadtree::Node* Quadtree::findNeighbourNodes(Node* node, int dir) {
     if (neighborCandidate == nullptr || neighborCandidate->leafnode)
         return neighborCandidate;
 
+    // Return self if there is no possible neighbour
+    if (neighborCandidate == root.get())
+        return node;
+
     if (neighborCandidate->children[tNode1].get() == node) {
         return neighborCandidate->children[hDir].get();
     }
@@ -226,14 +236,13 @@ vector<vec2> Quadtree::findNeighbourPoints(Node* node, int dir) {
     }
 
     while (smallNeighbours.size() > 0) {
-        if (smallNeighbours[0]->leafnode && !smallNeighbours[0]->empty) {
-            candidateNeighbours.push_back(smallNeighbours[0]);
-        }
-        else if (smallNeighbours[0]->leafnode && smallNeighbours[0]->empty) { // Search smallNeighbour in parent node because current leafnode is empty
-            for (int i = 0; i < smallNeighbours[0]->parent->children.size(); i++) {
-                if (smallNeighbours[0]->parent->children[i].get()->empty != true) {
-                    smallNeighbours.push_back(smallNeighbours[0]->parent->children[i].get());
-                }
+        if (smallNeighbours[0]->leafnode) {
+            if(!smallNeighbours[0]->empty)
+                candidateNeighbours.push_back(smallNeighbours[0]);
+            else if (smallNeighbours[0]->parent->children[hDir].get() == smallNeighbours[0] || 
+                    (vDir != -1 && smallNeighbours[0]->parent->children[vDir].get() == smallNeighbours[0])){
+                Node* neighbour = findNeighbourNodes(smallNeighbours[0], dir);
+                smallNeighbours.push_back(neighbour);
             }
         }
         else {
@@ -241,6 +250,7 @@ vector<vec2> Quadtree::findNeighbourPoints(Node* node, int dir) {
             if (vDir != -1)
                 smallNeighbours.push_back(smallNeighbours[0]->children[vDir].get());
         }
+
         smallNeighbours.erase(smallNeighbours.begin());
     }
     for (Node* node : candidateNeighbours) {
