@@ -226,8 +226,15 @@ vector<vec2> Quadtree::findNeighbourPoints(Node* node, int dir) {
     }
 
     while (smallNeighbours.size() > 0) {
-        if (smallNeighbours[0]->leafnode) {
+        if (smallNeighbours[0]->leafnode && !smallNeighbours[0]->empty) {
             candidateNeighbours.push_back(smallNeighbours[0]);
+        }
+        else if (smallNeighbours[0]->leafnode && smallNeighbours[0]->empty) { // Search smallNeighbour in parent node because current leafnode is empty
+            for (int i = 0; i < smallNeighbours[0]->parent->children.size(); i++) {
+                if (smallNeighbours[0]->parent->children[i].get()->empty != true) {
+                    smallNeighbours.push_back(smallNeighbours[0]->parent->children[i].get());
+                }
+            }
         }
         else {
             smallNeighbours.push_back(smallNeighbours[0]->children[hDir].get());
