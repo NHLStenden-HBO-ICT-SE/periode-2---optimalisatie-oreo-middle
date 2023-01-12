@@ -12,6 +12,7 @@ class Rocket
     void tick();
     void draw(Surface* screen);
 
+    vec2 get_position() const { return position; };
     bool intersects(vec2 position_other, float radius_other) const;
 
     vec2 position;

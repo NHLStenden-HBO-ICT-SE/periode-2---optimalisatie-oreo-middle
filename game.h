@@ -21,9 +21,6 @@ class Game
     void insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, int begin, int end);
     void draw_health_bars(const std::vector<const Tank*>& sorted_tanks, const int team);
     void measure_performance();
-    void mergeSortInterval(std::vector<int>& vec, int st, int mid, int end);
-    void mergeSort(std::vector<int>& vec, int st, int end);
-    int binarySearch(vector<int>, int x, int low, int high);
 
     vec2& find_closest_enemy(Tank& tank);
 
@@ -46,10 +43,6 @@ class Game
     void key_down(int key)
     { /* implement if you want to handle keys */
     }
-
-    vec2* convexHullData(vec2* points, int count, bool closeThePath, int& resultCount);
-
-    vector<vec2> ConvexHullManaged(vector<vec2> points);
 
   private:
     Surface* screen;
@@ -75,6 +68,7 @@ class Game
     //Checks if a point lies on the left of an arbitrary angled line
     bool left_of_line(vec2 line_start, vec2 line_end, vec2 point);
     void tankCollisionWithTank(vector<int> otherTankIndexes, Tank& currentTank);
+    void rocketCollisionWithTank(vector<int> otherTankIndexes, Rocket& currentRocket);
 
     point gridCell;
     int index;
@@ -87,7 +81,7 @@ class Game
 struct cell 
 {
     vector<int> tankindexes;
-    vector<int> bulletindexes;
+    vector<int> rocketindexes;
 };
 
 }; // namespace Tmpl8

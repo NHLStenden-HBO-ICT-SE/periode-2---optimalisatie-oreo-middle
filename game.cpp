@@ -129,67 +129,6 @@ vec2& Game::find_closest_enemy(Tank& tank)
     return closest_tankpos;
 }
 
-//void Game::mergeSortInterval(vector<int>& vec, int l, int mid, int r) {
-//    vector<float> temp;
-//
-//    int lpos = l;
-//    int rpos = mid + 1;
-//
-//    while (lpos <= mid && rpos <= r) {
-//        if (vec[lpos] <= vec[rpos]) {
-//            temp.push_back(vec[lpos]);
-//            lpos++;
-//        }
-//        else {
-//            temp.push_back(vec[rpos]);
-//            rpos++;
-//        }
-//    }
-//    while (lpos <= mid) {
-//        temp.push_back(vec[lpos]);
-//        lpos++;
-//    }
-//    while (rpos <= r) {
-//        temp.push_back(vec[rpos]);
-//        rpos++;
-//    }
-//    
-//    for (int i = l; i <= r; i++) {
-//        int j = i - l;
-//        vec[i] = temp[j];
-//    }
-//}
-//
-//void Game::mergeSort(vector<int>& vec, int l, int r) {
-//    int mid = (l + r) / 2;
-//    if (l < r) {
-//        mergeSort(vec, l, mid);
-//        mergeSort(vec, mid+1, r);
-//        mergeSortInterval(vec, l, mid, r);
-//        /*cout << mid << endl;*/
-//    }
-//}
-
-//int Game::binarySearch(vector<int> list, int x, int low, int high) {
-//    if (high >= low) {
-//        int mid = low + (high - low) / 2;
-//
-//        // If found at mid, then return it
-//        if (list[mid] == x)
-//            return mid;
-//
-//        // Search the left half
-//        if (list[mid] > x)
-//            return binarySearch(list, x, low, mid - 1);
-//
-//        // Search the right half
-//        if (list[mid] < x)
-//            return binarySearch(list, x, mid + 1, high);
-//    }
-//
-//    return -1;
-//}
-
 //Checks if a point lies on the left of an arbitrary angled line
 bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
 {
@@ -214,6 +153,22 @@ void Game::tankCollisionWithTank(vector<int> otherTankindexes, Tank& currentTank
         if (dir_squared_len < col_squared_len)
         {
             currentTank.push(dir.normalized(), 1.f);
+        }
+    }
+}
+
+void Game::rocketCollisionWithTank(vector<int> otherTankindexes, Rocket& currentRocket) {
+    for (int& otherTankindex : otherTankindexes) {
+        if (currentRocket.allignment == tanks.at(otherTankindex).allignment) continue;
+        if (currentRocket.intersects(tanks.at(otherTankindex).get_position(), tanks.at(otherTankindex).get_collision_radius())) {
+            explosions.push_back(Explosion(&explosion, tanks.at(otherTankindex).get_position()));
+
+            if (tanks.at(otherTankindex).hit(rocket_hit_value))
+            {
+                smokes.push_back(Smoke(smoke, tanks.at(otherTankindex).get_position() - vec2(7, 24)));
+            }
+
+            currentRocket.active = false;
         }
     }
 }
@@ -272,11 +227,43 @@ void Game::update(float deltaTime)
         }
     }
 
-    grid.clear();
+    for (int i = 0; i < rockets.size(); i++) {
+        if (rockets[i].active) {
+            vec2 rocketpos = rockets[i].get_position();
 
-    qtBlue->clear();
-    qtRed->clear();
+            gridCell.x = floor(rocketpos.x / cellwidth);
+            gridCell.y = floor(rocketpos.y / cellheight);
 
+            grid[gridCell.y][gridCell.x].rocketindexes.push_back(i);
+        }
+    }
+    for (Rocket& rocket : rockets) {
+        vec2 rocketpos = rocket.get_position();
+
+        gridCell.x = floor(rocketpos.x / cellwidth);
+        gridCell.y = floor(rocketpos.y / cellheight);
+
+        //topleft cell of current cell
+        rocketCollisionWithTank(grid[gridCell.y - 1][gridCell.x - 1].tankindexes, rocket);
+        // top cell of current cell
+        rocketCollisionWithTank(grid[gridCell.y - 1][gridCell.x].tankindexes, rocket);
+        // topleft cell of current cell
+        rocketCollisionWithTank(grid[gridCell.y - 1][gridCell.x + 1].tankindexes, rocket);
+        // left cell of current cell
+        rocketCollisionWithTank(grid[gridCell.y][gridCell.x - 1].tankindexes, rocket);
+        // current cell
+        rocketCollisionWithTank(grid[gridCell.y][gridCell.x].tankindexes, rocket);
+        // right cell of current cell
+        rocketCollisionWithTank(grid[gridCell.y][gridCell.x + 1].tankindexes, rocket);
+        // bottomleft cell of current cell
+        rocketCollisionWithTank(grid[gridCell.y + 1][gridCell.x - 1].tankindexes, rocket);
+        // bottom cel of current cell
+        rocketCollisionWithTank(grid[gridCell.y + 1][gridCell.x].tankindexes, rocket);
+        // bottom right cell of current cell
+        rocketCollisionWithTank(grid[gridCell.y + 1][gridCell.x + 1].tankindexes, rocket);
+    }
+
+    
     //Fill quadtrees
     for (Tank& tank : tanks) {
         if (!tank.active) continue;
@@ -319,6 +306,29 @@ void Game::update(float deltaTime)
         smoke.tick();
     }
 
+    //Update rockets
+    for (Rocket& rocket : rockets)
+    {
+        rocket.tick();
+
+        ////Check if rocket collides with enemy tank, spawn explosion, and if tank is destroyed spawn a smoke plume
+        //for (Tank& tank : tanks)
+        //{
+        //    if (tank.active && (tank.allignment != rocket.allignment) && rocket.intersects(tank.position, tank.collision_radius))
+        //    {
+        //        explosions.push_back(Explosion(&explosion, tank.position));
+
+        //        if (tank.hit(rocket_hit_value))
+        //        {
+        //            smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+        //        }
+
+        //        rocket.active = false;
+        //        break;
+        //    }
+        //}
+    }
+
     //"forcefield" points around active tanks
     forcefield_hull.clear();
     for (Tank& tank : tanks)
@@ -326,29 +336,6 @@ void Game::update(float deltaTime)
         if (tank.active)
         {
             forcefield_hull.push_back(tank.position);
-        }
-    }
-
-    //Update rockets
-    for (Rocket& rocket : rockets)
-    {
-        rocket.tick();
-
-        //Check if rocket collides with enemy tank, spawn explosion, and if tank is destroyed spawn a smoke plume
-        for (Tank& tank : tanks)
-        {
-            if (tank.active && (tank.allignment != rocket.allignment) && rocket.intersects(tank.position, tank.collision_radius))
-            {
-                explosions.push_back(Explosion(&explosion, tank.position));
-
-                if (tank.hit(rocket_hit_value))
-                {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
-                }
-
-                rocket.active = false;
-                break;
-            }
         }
     }
     
@@ -401,6 +388,9 @@ void Game::update(float deltaTime)
     }
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
+    grid.clear();
+    qtBlue->clear();
+    qtRed->clear();
 }
 
 // -----------------------------------------------------------
