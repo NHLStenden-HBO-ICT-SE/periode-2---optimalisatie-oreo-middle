@@ -92,6 +92,7 @@ using namespace Tmpl8;
 #include "particle_beam.h"
 #include "convexHull.h"
 #include "quadtree.h"
+#include "sort.h"
 
 #include "game.h"
 

@@ -16,6 +16,7 @@
     <ClCompile Include="terrain.cpp" />
     <ClCompile Include="convexHull.cpp" />
     <ClCompile Include="quadtree.cpp" />
+    <ClCompile Include="Sort.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />
@@ -35,6 +36,7 @@
     <ClInclude Include="terrain.h" />
     <ClInclude Include="convexHull.h" />
     <ClInclude Include="quadtree.h" />
+    <ClInclude Include="Sort.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">

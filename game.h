@@ -49,7 +49,7 @@ class Game
 
     vec2* convexHullData(vec2* points, int count, bool closeThePath, int& resultCount);
 
-    vector<vec2>* ConvexHullManaged(vector<vec2> points, bool closeThePath);
+    vector<vec2> ConvexHullManaged(vector<vec2> points);
 
   private:
     Surface* screen;
@@ -62,7 +62,7 @@ class Game
 
     Terrain background_terrain;
     std::vector<vec2> forcefield_hull;
-    vector<vec2>* R_forcefield_hull;
+    std::vector<vec2> R_forcefield_hull;
 
     vector<vec2> redTankposlist;
     vector<vec2> blueTankposlist;

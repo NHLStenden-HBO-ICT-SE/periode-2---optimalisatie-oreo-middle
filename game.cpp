@@ -329,9 +329,6 @@ void Game::update(float deltaTime)
         }
     }
 
-    //Calculate convex hull for 'rocket barrier'
-    R_forcefield_hull = ConvexHullManaged(forcefield_hull, true);
-
     //Update rockets
     for (Rocket& rocket : rockets)
     {
@@ -355,6 +352,9 @@ void Game::update(float deltaTime)
         }
     }
     
+    //Calculate convex hull for 'rocket barrier'
+    ConvexHull convexHull(forcefield_hull);
+    R_forcefield_hull = convexHull.getResultslist();
 
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
@@ -362,9 +362,9 @@ void Game::update(float deltaTime)
     {
         if (rocket.active)
         {
-            for (size_t i = 0; i < R_forcefield_hull->size(); i++)
+            for (size_t i = 0; i < R_forcefield_hull.size(); i++)
             {
-                if (circle_segment_intersect(R_forcefield_hull->at(i), R_forcefield_hull->at((i + 1) % R_forcefield_hull->size()), rocket.position, rocket.collision_radius))
+                if (circle_segment_intersect(R_forcefield_hull.at(i), R_forcefield_hull.at((i + 1) % R_forcefield_hull.size()), rocket.position, rocket.collision_radius))
                 {
                     explosions.push_back(Explosion(&explosion, rocket.position));
                     rocket.active = false;
@@ -401,43 +401,6 @@ void Game::update(float deltaTime)
     }
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
-}
-
-vector<vec2>* Game::ConvexHullManaged(vector<vec2> points, bool closeThePath) {
-
-    int count = points.size();
-    vec2* arrayOfPoints = new vec2[count];
-
-    for (int n = count - 1; n >= 0; n--)
-    {
-        arrayOfPoints[n].x = points.at(n).x;
-        arrayOfPoints[n].y = points.at(n).y;
-    }
-
-    int resultCount;
-    vec2* result = convexHullData(arrayOfPoints, count, closeThePath, resultCount);
-
-    vector<vec2>* resultManaged = nullptr;
-    if (resultCount > 0)
-    {
-        resultManaged = new vector<vec2>(resultCount);
-        for (int n = 0; n < resultCount; n++)
-        {
-            resultManaged->at(n).x = result[n].x;
-            resultManaged->at(n).y = result[n].y;
-        }
-    }
-
-    delete arrayOfPoints;
-    delete result;
-
-    return resultManaged;
-}
-
-vec2* Game::convexHullData(vec2* points, int count, bool closeThePath, int& resultCount) {
-
-    ConvexHull convexHull(points, count, closeThePath);
-    return convexHull.getResultAsArray(resultCount);
 }
 
 // -----------------------------------------------------------
@@ -481,10 +444,10 @@ void Game::draw()
     }
 
     //Draw forcefield (mostly for debugging, its kinda ugly..)
-    for (size_t i = 0; i < R_forcefield_hull->size(); i++)
+    for (size_t i = 0; i < R_forcefield_hull.size(); i++)
     {
-        vec2 line_start = R_forcefield_hull->at(i);
-        vec2 line_end = R_forcefield_hull->at((i + 1) % R_forcefield_hull->size());
+        vec2 line_start = R_forcefield_hull.at(i);
+        vec2 line_end = R_forcefield_hull.at((i + 1) % R_forcefield_hull.size());
         line_start.x += HEALTHBAR_OFFSET;
         line_end.x += HEALTHBAR_OFFSET;
         screen->line(line_start, line_end, 0x0000ff);
