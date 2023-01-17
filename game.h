@@ -8,6 +8,7 @@ class Rocket;
 class Smoke;
 class Particle_beam;
 class ConvexHull;
+class Collision;
 
 class Game
 {
@@ -75,13 +76,10 @@ class Game
 
     Quadtree* qtBlue = new Quadtree();
     Quadtree* qtRed = new Quadtree();
+
+    Collision* grid = new Collision();
 };
 
-//Grid
-struct cell 
-{
-    vector<int> tankindexes;
-    vector<int> rocketindexes;
-};
+
 
 }; // namespace Tmpl8

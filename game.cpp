@@ -11,7 +11,7 @@ constexpr auto tank_max_speed = 1.0;
 
 constexpr auto health_bar_width = 70;
 
-constexpr auto max_frames = 1000;
+constexpr auto max_frames = 2000;
 
 //Global performance timer
 constexpr auto REF_PERFORMANCE = 66536.9; //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
@@ -41,12 +41,7 @@ const static vec2 rocket_size(6, 6);
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
 
-int cellwidth = 10, cellheight = 10;
-const int gridRowCount = floor(SCRHEIGHT / cellwidth);
-const int gridCollCount = floor(SCRWIDTH / cellheight);
 
-vector<cell> col(gridCollCount);
-vector<vector<cell>> grid(gridRowCount, col);
 
 // -----------------------------------------------------------
 // Initialize the simulation state
@@ -135,44 +130,6 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
     return ((line_end.x - line_start.x) * (point.y - line_start.y) - (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
-//Checks collision between tanks. If there is a collision, nudge tanks away from each other
-void Game::tankCollisionWithTank(vector<int> otherTankindexes, Tank& currentTank) {
-    for (int& otherTankindex : otherTankindexes) {
-        if (&currentTank == &(tanks.at(otherTankindex))) continue;
-
-        vec2 tankpos = currentTank.get_position();
-
-        vec2 otherTankpos = tanks.at(otherTankindex).get_position();
-
-        vec2 dir = tankpos - otherTankpos;
-        float dir_squared_len = dir.sqr_length();
-
-        float col_squared_len = (tank_radius + tank_radius);
-        col_squared_len *= col_squared_len;
-
-        if (dir_squared_len < col_squared_len)
-        {
-            currentTank.push(dir.normalized(), 1.f);
-        }
-    }
-}
-
-void Game::rocketCollisionWithTank(vector<int> otherTankindexes, Rocket& currentRocket) {
-    for (int& otherTankindex : otherTankindexes) {
-        if (currentRocket.allignment == tanks.at(otherTankindex).allignment) continue;
-        if (currentRocket.intersects(tanks.at(otherTankindex).get_position(), tanks.at(otherTankindex).get_collision_radius())) {
-            explosions.push_back(Explosion(&explosion, tanks.at(otherTankindex).get_position()));
-
-            if (tanks.at(otherTankindex).hit(rocket_hit_value))
-            {
-                smokes.push_back(Smoke(smoke, tanks.at(otherTankindex).get_position() - vec2(7, 24)));
-            }
-
-            currentRocket.active = false;
-        }
-    }
-}
-
 // -----------------------------------------------------------
 // Update the game state:
 // Move all objects
@@ -182,103 +139,40 @@ void Game::rocketCollisionWithTank(vector<int> otherTankindexes, Rocket& current
 // -----------------------------------------------------------
 void Game::update(float deltaTime)
 {
-    grid.resize(gridRowCount, col);
-    
-    int tankIndex = 0;
-    //Initialize tanks into a cell on the grid
-    for (Tank& tank : tanks) {
-        if (tank.active) {
-            vec2 tankpos = tank.get_position();
-
-            gridCell.x = floor(tankpos.x / cellwidth);
-            gridCell.y = floor(tankpos.y / cellheight);
-
-            grid[gridCell.y][gridCell.x].tankindexes.push_back(tankIndex);
-        }
-        tankIndex++;
-    }
-
-    //Check collision for every tank with its neigbor grid cells (9 total)
-    for (Tank& tank : tanks) {
-        if (tank.active) {
-            vec2 tankpos = tank.get_position();
-
-            gridCell.x = floor(tankpos.x / cellwidth);
-            gridCell.y = floor(tankpos.y / cellheight);
-
-            //topleft cell of current cell
-            tankCollisionWithTank(grid[gridCell.y - 1][gridCell.x - 1].tankindexes, tank);
-            // top cell of current cell
-            tankCollisionWithTank(grid[gridCell.y - 1][gridCell.x].tankindexes, tank);
-            // topleft cell of current cell
-            tankCollisionWithTank(grid[gridCell.y - 1][gridCell.x + 1].tankindexes, tank);
-            // left cell of current cell
-            tankCollisionWithTank(grid[gridCell.y][gridCell.x - 1].tankindexes, tank);
-            // current cell
-            tankCollisionWithTank(grid[gridCell.y][gridCell.x].tankindexes, tank);
-            // right cell of current cell
-            tankCollisionWithTank(grid[gridCell.y][gridCell.x + 1].tankindexes, tank);
-            // bottomleft cell of current cell
-            tankCollisionWithTank(grid[gridCell.y + 1][gridCell.x - 1].tankindexes, tank);
-            // bottom cel of current cell
-            tankCollisionWithTank(grid[gridCell.y + 1][gridCell.x].tankindexes, tank);
-            // bottom right cell of current cell
-            tankCollisionWithTank(grid[gridCell.y + 1][gridCell.x + 1].tankindexes, tank);
+    //"forcefield" points around active tanks
+    for (Tank& tank : tanks)
+    {
+        if (tank.active)
+        {
+            forcefield_hull.push_back(tank.position);
         }
     }
 
-    for (int i = 0; i < rockets.size(); i++) {
-        if (rockets[i].active) {
-            vec2 rocketpos = rockets[i].get_position();
+    // Calculate convex hull for 'rocket barrier'
+    ConvexHull convexHull(forcefield_hull);
+    R_forcefield_hull = convexHull.getResultslist();
 
-            gridCell.x = floor(rocketpos.x / cellwidth);
-            gridCell.y = floor(rocketpos.y / cellheight);
+    // Adding tanks to grid
+    for (int i = 0; i < tanks.size(); i++) {
+        if (!tanks[i].active) continue;
 
-            grid[gridCell.y][gridCell.x].rocketindexes.push_back(i);
-        }
+        vec2 tankpos = tanks[i].get_position();
+        grid->insert(tankpos, i);
     }
-    for (Rocket& rocket : rockets) {
-        vec2 rocketpos = rocket.get_position();
-
-        gridCell.x = floor(rocketpos.x / cellwidth);
-        gridCell.y = floor(rocketpos.y / cellheight);
-
-        //topleft cell of current cell
-        rocketCollisionWithTank(grid[gridCell.y - 1][gridCell.x - 1].tankindexes, rocket);
-        // top cell of current cell
-        rocketCollisionWithTank(grid[gridCell.y - 1][gridCell.x].tankindexes, rocket);
-        // topleft cell of current cell
-        rocketCollisionWithTank(grid[gridCell.y - 1][gridCell.x + 1].tankindexes, rocket);
-        // left cell of current cell
-        rocketCollisionWithTank(grid[gridCell.y][gridCell.x - 1].tankindexes, rocket);
-        // current cell
-        rocketCollisionWithTank(grid[gridCell.y][gridCell.x].tankindexes, rocket);
-        // right cell of current cell
-        rocketCollisionWithTank(grid[gridCell.y][gridCell.x + 1].tankindexes, rocket);
-        // bottomleft cell of current cell
-        rocketCollisionWithTank(grid[gridCell.y + 1][gridCell.x - 1].tankindexes, rocket);
-        // bottom cel of current cell
-        rocketCollisionWithTank(grid[gridCell.y + 1][gridCell.x].tankindexes, rocket);
-        // bottom right cell of current cell
-        rocketCollisionWithTank(grid[gridCell.y + 1][gridCell.x + 1].tankindexes, rocket);
-    }
-
     
     //Fill quadtrees
     for (Tank& tank : tanks) {
         if (!tank.active) continue;
+        vec2 tankpos = tank.get_position();
         if (tank.allignment == BLUE) {            
             //Add points to quadtree of blue tanks
-            vec2 tankpos = tank.get_position();
             qtBlue->add(tankpos);
         }
         else {            
             //Add points to quadtree of red tanks
-            vec2 tankpos = tank.get_position();
             qtRed->add(tankpos);            
         }
     }
-    
     
     //Update tanks
     for (Tank& tank : tanks)
@@ -300,6 +194,35 @@ void Game::update(float deltaTime)
         }
     }
 
+    // Checking collision tank-tank
+    for (Tank& tank : tanks) {
+        if (!tank.active) continue;
+        grid->tankCollisionWithTank(tank, &tanks);
+    }
+
+    // Adding rockets to grid
+    for (int i = 0; i < rockets.size(); i++) {
+        if (!rockets[i].active) continue;
+
+        vec2 rocketpos = rockets[i].get_position();
+        grid->insert(rocketpos, i);
+    }
+
+    //// Checking collision tank-rocket and add explosions and smoke when collided ----------bugged
+    //for (Rocket& rocket : rockets) {
+    //    if (!rocket.active) continue;
+
+    //    int collisionindex = grid->rocketCollisionWithTank(rocket, &tanks);
+    //    if (collisionindex != -1) {
+    //        explosions.push_back(Explosion(&explosion, tanks.at(collisionindex).get_position()));
+
+    //        if (tanks.at(collisionindex).hit(rocket_hit_value))
+    //        {
+    //            smokes.push_back(Smoke(smoke, tanks.at(collisionindex).get_position() - vec2(7, 24)));
+    //        }
+    //    }
+    //}
+
     //Update smoke plumes
     for (Smoke& smoke : smokes)
     {
@@ -310,38 +233,12 @@ void Game::update(float deltaTime)
     for (Rocket& rocket : rockets)
     {
         rocket.tick();
-
-        ////Check if rocket collides with enemy tank, spawn explosion, and if tank is destroyed spawn a smoke plume
-        //for (Tank& tank : tanks)
-        //{
-        //    if (tank.active && (tank.allignment != rocket.allignment) && rocket.intersects(tank.position, tank.collision_radius))
-        //    {
-        //        explosions.push_back(Explosion(&explosion, tank.position));
-
-        //        if (tank.hit(rocket_hit_value))
-        //        {
-        //            smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
-        //        }
-
-        //        rocket.active = false;
-        //        break;
-        //    }
-        //}
     }
-
-    //"forcefield" points around active tanks
-    forcefield_hull.clear();
-    for (Tank& tank : tanks)
+    //Update explosion sprites 
+    for (Explosion& explosion : explosions)
     {
-        if (tank.active)
-        {
-            forcefield_hull.push_back(tank.position);
-        }
+        explosion.tick();
     }
-    
-    //Calculate convex hull for 'rocket barrier'
-    ConvexHull convexHull(forcefield_hull);
-    R_forcefield_hull = convexHull.getResultslist();
 
     //Disable rockets if they collide with the "forcefield"
     //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
@@ -360,8 +257,7 @@ void Game::update(float deltaTime)
         }
     }
 
-    //Remove exploded rockets with remove erase idiom
-    rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
+    
 
     //Update particle beams
     for (Particle_beam& particle_beam : particle_beams)
@@ -381,16 +277,15 @@ void Game::update(float deltaTime)
         }
     }
 
-    //Update explosion sprites and remove when done with remove erase idiom
-    for (Explosion& explosion : explosions)
-    {
-        explosion.tick();
-    }
+    
 
+    //Remove and clear:
+    rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
-    grid.clear();
+    grid->clear();
     qtBlue->clear();
     qtRed->clear();
+    forcefield_hull.clear();
 }
 
 // -----------------------------------------------------------

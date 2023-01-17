@@ -119,6 +119,7 @@
   </ItemDefinitionGroup>
   <!-- END Custom section -->
   <ItemGroup>
+    <ClCompile Include="collision.cpp" />
     <ClCompile Include="convexHull.cpp" />
     <ClCompile Include="explosion.cpp" />
     <ClCompile Include="game.cpp" />
@@ -126,7 +127,7 @@
     <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="rocket.cpp" />
     <ClCompile Include="smoke.cpp" />
-    <ClCompile Include="Sort.cpp" />
+    <ClCompile Include="sort.cpp" />
     <ClCompile Include="surface.cpp" />
     <ClCompile Include="tank.cpp" />
     <ClCompile Include="template.cpp">
@@ -135,6 +136,7 @@
     <ClCompile Include="terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="collision.h" />
     <ClInclude Include="convexHull.h" />
     <ClInclude Include="explosion.h" />
     <ClInclude Include="game.h" />
@@ -143,7 +145,7 @@
     <ClInclude Include="quadtree.h" />
     <ClInclude Include="rocket.h" />
     <ClInclude Include="smoke.h" />
-    <ClInclude Include="Sort.h" />
+    <ClInclude Include="sort.h" />
     <ClInclude Include="surface.h" />
     <ClInclude Include="tank.h" />
     <ClInclude Include="template.h" />

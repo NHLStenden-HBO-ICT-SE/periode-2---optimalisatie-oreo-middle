@@ -146,7 +146,7 @@ class vec2 // adapted from https://github.com/dcow/RayTracer
     float dot(const vec2& operand) const { return x * operand.x + y * operand.y; }
 };
 
-typedef int number;
+typedef size_t number;
 typedef struct {
     number x;
     number y;

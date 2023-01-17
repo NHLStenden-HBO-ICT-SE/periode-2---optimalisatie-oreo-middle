@@ -93,6 +93,7 @@ using namespace Tmpl8;
 #include "convexHull.h"
 #include "quadtree.h"
 #include "sort.h"
+#include "collision.h"
 
 #include "game.h"
 

@@ -8,7 +8,6 @@ ConvexHull::ConvexHull(vector<vec2> points) {
 	_points = points;
 
 	calcConvexHull();
-	
 }
 
 ConvexHull::~ConvexHull() {

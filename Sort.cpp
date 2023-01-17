@@ -1,5 +1,5 @@
 #include "precomp.h"
-#include "Sort.h"
+#include "sort.h"
 namespace Tmpl8
 {
     Sort::Sort() {
