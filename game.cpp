@@ -157,7 +157,7 @@ void Game::update(float deltaTime)
         if (!tanks[i].active) continue;
 
         vec2 tankpos = tanks[i].get_position();
-        grid->insert(tankpos, i);
+        grid->insertTank(tankpos, i);
     }
     
     //Fill quadtrees
@@ -200,28 +200,20 @@ void Game::update(float deltaTime)
         grid->tankCollisionWithTank(tank, &tanks);
     }
 
-    // Adding rockets to grid
-    for (int i = 0; i < rockets.size(); i++) {
-        if (!rockets[i].active) continue;
+    // Checking collision tank-rocket and add explosions and smoke when collided ----------bugged
+    for (Rocket& rocket : rockets) {
+        if (!rocket.active) continue;
 
-        vec2 rocketpos = rockets[i].get_position();
-        grid->insert(rocketpos, i);
+        int collisionindex = grid->rocketCollisionWithTank(rocket, &tanks);
+        if (collisionindex != -1) {
+            explosions.push_back(Explosion(&explosion, tanks.at(collisionindex).get_position()));
+
+            if (tanks.at(collisionindex).hit(rocket_hit_value))
+            {
+                smokes.push_back(Smoke(smoke, tanks.at(collisionindex).get_position() - vec2(7, 24)));
+            }
+        }
     }
-
-    //// Checking collision tank-rocket and add explosions and smoke when collided ----------bugged
-    //for (Rocket& rocket : rockets) {
-    //    if (!rocket.active) continue;
-
-    //    int collisionindex = grid->rocketCollisionWithTank(rocket, &tanks);
-    //    if (collisionindex != -1) {
-    //        explosions.push_back(Explosion(&explosion, tanks.at(collisionindex).get_position()));
-
-    //        if (tanks.at(collisionindex).hit(rocket_hit_value))
-    //        {
-    //            smokes.push_back(Smoke(smoke, tanks.at(collisionindex).get_position() - vec2(7, 24)));
-    //        }
-    //    }
-    //}
 
     //Update smoke plumes
     for (Smoke& smoke : smokes)

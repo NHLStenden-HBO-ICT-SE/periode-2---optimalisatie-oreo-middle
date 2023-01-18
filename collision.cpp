@@ -8,11 +8,11 @@ namespace Tmpl8
 
     Collision::~Collision() {}
 
-    void Collision::insert(vec2& tankpos, int tankIndex) {
+    void Collision::insertTank(vec2& tankpos, int tankIndex) {
         gridCell.x = floor(tankpos.x / cellwidth);
         gridCell.y = floor(tankpos.y / cellheight);
 
-        grid[gridCell.y][gridCell.x].tankindexes.push_back(tankIndex);
+        grid[gridCell.y][gridCell.x].push_back(tankIndex);
     }
 
     void Collision::tankCollisionWithTank(Tank& currentTank, vector<Tank>* tanks) {
@@ -25,7 +25,7 @@ namespace Tmpl8
         // For every direction checking neighbour grid cells. 9 total
         for (int i = -1; i < 2; i++) {
             for (int j = -1; j < 2;j++) {
-                for (int& index : grid[gridCell.y + i][gridCell.x + j].tankindexes) {
+                for (int& index : grid[gridCell.y + i][gridCell.x + j]) {
                     otherTankindexes.push_back(index);
                 }
             }
@@ -61,7 +61,7 @@ namespace Tmpl8
         // For every direction checking neighbour grid cells. 9 total
         for (int i = -1; i < 2; i++) {
             for (int j = -1; j < 2; j++) {
-                for (int& index : grid[gridCell.y + i][gridCell.x + j].tankindexes) {
+                for (int& index : grid[gridCell.y + i][gridCell.x + j]) {
                     otherTankindexes.push_back(index);
                 }
             }

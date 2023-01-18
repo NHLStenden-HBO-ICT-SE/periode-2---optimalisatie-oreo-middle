@@ -10,21 +10,15 @@ private:
     size_t gridCollCount = floor(SCRWIDTH / cellheight);
 
     point gridCell;
-
-    struct cell
-    {
-        vector<int> tankindexes;
-        vector<int> rocketindexes;
-    };
     
-    vector<cell> col;
-    vector<vector<cell>> grid;
+    vector<vector<int>> col;
+    vector<vector<vector<int>>> grid;
 
 public:
     Collision();
     ~Collision();
 
-    void insert(vec2& tankpos, int tankIndex);
+    void insertTank(vec2& tankpos, int tankIndex);
     void tankCollisionWithTank(Tank& currentTank, vector<Tank>* tanks);
     int rocketCollisionWithTank(Rocket& currentRocket, vector<Tank>* tanks);
 
