@@ -1,7 +1,7 @@
 #include "precomp.h" // include (only) this in every .cpp file
 
-constexpr auto num_tanks_blue = 548;
-constexpr auto num_tanks_red = 548;
+constexpr auto num_tanks_blue = 2048;
+constexpr auto num_tanks_red = 2048;
 
 constexpr auto tank_max_health = 1000;
 constexpr auto rocket_hit_value = 60;
@@ -258,26 +258,23 @@ void Game::update(float deltaTime)
         }
     }
     
-
     //Update particle beams
     for (Particle_beam& particle_beam : particle_beams)
     {
         particle_beam.tick(tanks);
 
-        //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
-        for (Tank& tank : tanks)
-        {
-            if (tank.active && particle_beam.rectangle.intersects_circle(tank.get_position(), tank.get_collision_radius()))
+        vector<int> collisionTanks = grid->tankCollisionWithParticleBeam(particle_beam);
+
+        for (int& collisionTank : collisionTanks) {
+
+            if (tanks.at(collisionTank).hit(particle_beam.damage))
             {
-                if (tank.hit(particle_beam.damage))
-                {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                }
+                smokes.push_back(Smoke(smoke, tanks.at(collisionTank).position - vec2(0, 48)));
             }
         }
+        
     }
 
-    
 
     //Remove and clear:
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());

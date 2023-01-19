@@ -76,4 +76,24 @@ namespace Tmpl8
         }
         return -1;
     }
+
+    vector<int> Collision::tankCollisionWithParticleBeam(Particle_beam currentBeam) {
+        gridCell.x = floor(currentBeam.min_position.x / cellwidth);
+        gridCell.y = floor(currentBeam.min_position.y / cellheight);
+
+        gridrange.x = floor((currentBeam.max_position.x - currentBeam.min_position.x) / cellwidth);
+        gridrange.y = floor((currentBeam.max_position.y - currentBeam.min_position.y) / cellwidth);
+
+        vector<int> otherTankindexes;
+
+        for (int i = 0; i < gridrange.y; i++) {
+            for (int j = 0; j < gridrange.x; j++) {
+                for (int& index : grid[gridCell.y + i][gridCell.x + j]) {
+                    otherTankindexes.push_back(index);
+                }
+            }
+        }
+
+        return otherTankindexes;
+    }
 }
