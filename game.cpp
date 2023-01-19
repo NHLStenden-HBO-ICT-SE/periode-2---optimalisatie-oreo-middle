@@ -263,10 +263,12 @@ void Game::update(float deltaTime)
     {
         particle_beam.tick(tanks);
 
+        // Checks collision with tanks in range of particle beam on the grid
         vector<int> collisionTanks = grid->tankCollisionWithParticleBeam(particle_beam);
 
         for (int& collisionTank : collisionTanks) {
 
+            // Add smoke if tank is dead
             if (tanks.at(collisionTank).hit(particle_beam.damage))
             {
                 smokes.push_back(Smoke(smoke, tanks.at(collisionTank).position - vec2(0, 48)));

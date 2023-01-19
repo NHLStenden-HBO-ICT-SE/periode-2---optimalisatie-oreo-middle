@@ -31,6 +31,7 @@ namespace Tmpl8
             }
         }
 
+        // check collision with every tank that is in neighbour gridcells, nudges tanks away from eachother if collided
         for (int& otherTankindex : otherTankindexes) {
             if (&currentTank == &(tanks->at(otherTankindex))) continue;
 
@@ -58,7 +59,7 @@ namespace Tmpl8
 
         vector<int> otherTankindexes;
 
-        // For every direction checking neighbour grid cells. 9 total
+        // For every direction checking neighbour gridcells and adding tankindex to list
         for (int i = -1; i < 2; i++) {
             for (int j = -1; j < 2; j++) {
                 for (int& index : grid[gridCell.y + i][gridCell.x + j]) {
@@ -67,6 +68,7 @@ namespace Tmpl8
             }
         }
 
+        // Check collision with every tank of neighbour gridcells and return if collided
         for (int& otherTankindex : otherTankindexes) {
             if (currentRocket.allignment == tanks->at(otherTankindex).allignment) continue;
             if (currentRocket.intersects(tanks->at(otherTankindex).get_position(), tanks->at(otherTankindex).get_collision_radius())) {
@@ -78,14 +80,17 @@ namespace Tmpl8
     }
 
     vector<int> Collision::tankCollisionWithParticleBeam(Particle_beam currentBeam) {
+        // Upperleft most point of particel beam
         gridCell.x = floor(currentBeam.min_position.x / cellwidth);
         gridCell.y = floor(currentBeam.min_position.y / cellheight);
 
+        // Range of gridcells according to size of particle beam
         gridrange.x = floor((currentBeam.max_position.x - currentBeam.min_position.x) / cellwidth);
         gridrange.y = floor((currentBeam.max_position.y - currentBeam.min_position.y) / cellwidth);
 
         vector<int> otherTankindexes;
 
+        // add tanks of cell to list for every gridcell inrange of particle beam
         for (int i = 0; i < gridrange.y; i++) {
             for (int j = 0; j < gridrange.x; j++) {
                 for (int& index : grid[gridCell.y + i][gridCell.x + j]) {
