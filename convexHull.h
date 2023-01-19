@@ -8,6 +8,7 @@ class ConvexHull
 private:
 	vector<vec2> _points;
 	vector<vec2> resultPoints;
+	size_t index = 0;
 
 	Sort* sort;
 	

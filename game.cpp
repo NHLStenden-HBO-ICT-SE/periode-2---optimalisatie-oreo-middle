@@ -233,24 +233,26 @@ void Game::update(float deltaTime)
     }
 
     //Disable rockets if they are outside convexhull
-    //Raycast rocketpos. Point is outside when it does not pass 2 lines of hull
+    //Raycast rocketpos and check how many times it passes through the forcefield. 
     for (Rocket& rocket : rockets)
     {
         if (rocket.active)
         {
             vec2 rocketpos = rocket.get_position();
-            bool inside = false;
+            int inside = 0;
 
             for (int i = 0, j = R_forcefield_hull.size() - 1; i < R_forcefield_hull.size(); j = i++) {
                 vec2 hullpos1 = R_forcefield_hull[i];
                 vec2 hullpos2 = R_forcefield_hull[j];
 
+                // true if point has passed between 2 points of hull
                 if (((hullpos1.y > rocketpos.y) != (hullpos2.y > rocketpos.y))
                     && (rocketpos.x < (hullpos2.x - hullpos1.x)* (rocketpos.y - hullpos1.y) / (hullpos2.y - hullpos1.y) + hullpos1.x)){
-                    inside = !inside;
+                    inside++;
                 }
             }
-            if (!inside) {
+            // Point is inside when it passes odd amount of lines, and is outside when it passes an even number of lines
+            if (inside % 2 == 0) {
                 explosions.push_back(Explosion(&explosion, rocket.position));
                 rocket.active = false;
             }

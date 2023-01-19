@@ -19,30 +19,28 @@ void ConvexHull::calcConvexHull() {
 	sort = new Sort();
 	sort->vec2Mergesort(_points, 0, _points.size() - 1);
 
-	size_t index = 0;
-
 	// List with size 2x the size of all points (for checking bottom and top points)
-	vector<vec2> topNbot(2*_points.size());
+	vector<vec2> top_bot(2*_points.size());
 	
 	//Bottomhalf
 	for (size_t i = 0; i < _points.size(); i++) {
-		while (index >= 2 && crossProd(topNbot[index-2], topNbot[index-1], _points[i]) <= 0)
+		while (index >= 2 && crossProd(top_bot[index-2], top_bot[index-1], _points[i]) <= 0)
 			index--;
-		topNbot[index++] = _points[i];
+		top_bot[index++] = _points[i];
 	}
 
 	//Tophalf
-	int b = index + 1;
+	int top_begin = index + 1;
 	for (size_t i = _points.size() - 1; i > 0; i--) {
-		while (index >= b && crossProd(topNbot[index - 2], topNbot[index - 1], _points[i-1]) <= 0)
+		while (index >= top_begin && crossProd(top_bot[index - 2], top_bot[index - 1], _points[i-1]) <= 0)
 			index--;
-		topNbot[index++] = _points[i-1];
+		top_bot[index++] = _points[i-1];
 	}
 
 	//remove last point because its the same as the first one
-	topNbot.resize(index - 1);
+	top_bot.resize(index - 1);
 
-	resultPoints = topNbot;
+	resultPoints = top_bot;
 }
 
 }
