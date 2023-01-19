@@ -1,7 +1,7 @@
 #include "precomp.h" // include (only) this in every .cpp file
 
-constexpr auto num_tanks_blue = 2048;
-constexpr auto num_tanks_red = 2048;
+constexpr auto num_tanks_blue = 548;
+constexpr auto num_tanks_red = 548;
 
 constexpr auto tank_max_health = 1000;
 constexpr auto rocket_hit_value = 60;
@@ -232,23 +232,31 @@ void Game::update(float deltaTime)
         explosion.tick();
     }
 
-    //Disable rockets if they collide with the "forcefield"
-    //Hint: A point to convex hull intersection test might be better here? :) (Disable if outside)
+    //Disable rockets if they are outside convexhull
+    //Raycast rocketpos. Point is outside when it does not pass 2 lines of hull
     for (Rocket& rocket : rockets)
     {
         if (rocket.active)
         {
-            for (size_t i = 0; i < R_forcefield_hull.size(); i++)
-            {
-                if (circle_segment_intersect(R_forcefield_hull.at(i), R_forcefield_hull.at((i + 1) % R_forcefield_hull.size()), rocket.position, rocket.collision_radius))
-                {
-                    explosions.push_back(Explosion(&explosion, rocket.position));
-                    rocket.active = false;
+            vec2 rocketpos = rocket.get_position();
+            bool inside = false;
+
+            for (int i = 0, j = R_forcefield_hull.size() - 1; i < R_forcefield_hull.size(); j = i++) {
+                vec2 hullpos1 = R_forcefield_hull[i];
+                vec2 hullpos2 = R_forcefield_hull[j];
+
+                if (((hullpos1.y > rocketpos.y) != (hullpos2.y > rocketpos.y))
+                    && (rocketpos.x < (hullpos2.x - hullpos1.x)* (rocketpos.y - hullpos1.y) / (hullpos2.y - hullpos1.y) + hullpos1.x)){
+                    inside = !inside;
                 }
             }
+            if (!inside) {
+                explosions.push_back(Explosion(&explosion, rocket.position));
+                rocket.active = false;
+            }
+
         }
     }
-
     
 
     //Update particle beams
