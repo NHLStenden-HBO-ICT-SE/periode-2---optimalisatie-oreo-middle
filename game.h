@@ -56,7 +56,7 @@ class Game
 
     Terrain background_terrain;
     std::vector<vec2> forcefield_hull;
-    std::vector<vec2> R_forcefield_hull;
+    std::vector<vec2> convex_hull;
 
     vector<vec2> redTankposlist;
     vector<vec2> blueTankposlist;
@@ -68,16 +68,11 @@ class Game
 
     //Checks if a point lies on the left of an arbitrary angled line
     bool left_of_line(vec2 line_start, vec2 line_end, vec2 point);
-    void tankCollisionWithTank(vector<int> otherTankIndexes, Tank& currentTank);
-    void rocketCollisionWithTank(vector<int> otherTankIndexes, Rocket& currentRocket);
 
-    point gridCell;
-    int index;
+    std::unique_ptr<Quadtree> qtBlue = make_unique<Quadtree>();
+    std::unique_ptr<Quadtree> qtRed = make_unique<Quadtree>();
 
-    Quadtree* qtBlue = new Quadtree();
-    Quadtree* qtRed = new Quadtree();
-
-    Collision* grid = new Collision();
+    std::unique_ptr<Collision> grid = make_unique<Collision>();
 };
 
 

@@ -10,7 +10,7 @@ private:
 	vector<vec2> resultPoints;
 	size_t index = 0;
 
-	Sort* sort;
+	std::unique_ptr<Sort> sort;
 	
 	int crossProd(vec2 o, vec2 a, vec2 b) { return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x); };
 	void calcConvexHull();

@@ -2,8 +2,10 @@
 #include "collision.h"
 namespace Tmpl8
 {
+
     Collision::Collision() {
-        clear();
+        col.resize(gridCollCount);
+        grid.resize(gridRowCount, col);
     }
 
     Collision::~Collision() {}
@@ -101,4 +103,12 @@ namespace Tmpl8
 
         return otherTankindexes;
     }
+
+    void Collision::clear() {
+        for (int i = 0; i < gridRowCount; i++) {
+            for (int j = 0; j < gridCollCount; j++) {
+                grid[i][j].clear();
+            }
+        }
+    };
 }

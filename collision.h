@@ -9,11 +9,12 @@ private:
     size_t gridRowCount = floor(SCRHEIGHT / cellwidth);
     size_t gridCollCount = floor(SCRWIDTH / cellheight);
 
-    point gridCell;
-    vec2 gridrange;
+    point gridCell = {};
+    vec2 gridrange = {};
     
     vector<vector<int>> col;
     vector<vector<vector<int>>> grid;
+
 
 public:
     Collision();
@@ -24,9 +25,7 @@ public:
     int rocketCollisionWithTank(Rocket& currentRocket, vector<Tank>* tanks);
     vector<int> tankCollisionWithParticleBeam(Particle_beam currentBeam);
 
-    void clear() { grid.clear(); col.resize(gridCollCount);
-                                grid.resize(gridRowCount, col);
-    };
+    void clear();
 };
 
 }

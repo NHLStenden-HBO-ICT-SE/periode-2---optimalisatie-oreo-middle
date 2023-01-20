@@ -33,8 +33,6 @@ private:
     static const int Threshold = 10;
     static const int MaxDepth = 20;
 
-    vector<int> directions {0,1,2,3,4,5,6,7}; //8 Directions for all the surrounding nodes (left to right, top to bottom)
-
     int Quadtree::getQuadrant(vec2& p, Boundries* boundries);
     void Quadtree::add(Node* node, vec2& p, Boundries* boundries, int depth);
     void Quadtree::split(Node* node);

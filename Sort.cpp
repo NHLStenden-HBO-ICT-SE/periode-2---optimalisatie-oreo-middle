@@ -9,17 +9,19 @@ namespace Tmpl8
 	void Sort::vec2Mergesort(vector<vec2>& points, int l, int r) {
         int mid = (l + r) / 2;
         if (l < r) {
+            // split and sort two halves of list and merge when done
             vec2Mergesort(points, l, mid);
             vec2Mergesort(points, mid + 1, r);
-            vec2MergeSortInterval(points, l, mid, r);
+            vec2Merge(points, l, mid, r);
         }
 	}
-    void Sort::vec2MergeSortInterval(vector<vec2>& points, int l, int mid, int r) {
+    void Sort::vec2Merge(vector<vec2>& points, int l, int mid, int r) {
         vector<vec2> temp;
 
         int lpos = l;
         int rpos = mid + 1;
 
+        // Loop until end of lpos or rpos, choose larger one and place them in order
         while (lpos <= mid && rpos <= r) {
             if (points[lpos].x <= points[rpos].x) {
                 temp.push_back(points[lpos]);

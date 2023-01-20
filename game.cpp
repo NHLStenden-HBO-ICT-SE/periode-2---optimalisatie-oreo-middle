@@ -41,7 +41,8 @@ const static vec2 rocket_size(6, 6);
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
 
-
+int Num_Threads = thread::hardware_concurrency();
+ThreadPool threadpool(Num_Threads);
 
 // -----------------------------------------------------------
 // Initialize the simulation state
@@ -86,6 +87,7 @@ void Game::init()
     particle_beams.push_back(Particle_beam(vec2(590, 327), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(64, 64), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
+
 }
 
 // -----------------------------------------------------------
@@ -150,7 +152,7 @@ void Game::update(float deltaTime)
 
     // Calculate convex hull for 'rocket barrier'
     ConvexHull convexHull(forcefield_hull);
-    R_forcefield_hull = convexHull.getResultslist();
+    convex_hull = convexHull.getResultslist();
 
     // Adding tanks to grid
     for (int i = 0; i < tanks.size(); i++) {
@@ -159,6 +161,7 @@ void Game::update(float deltaTime)
         vec2 tankpos = tanks[i].get_position();
         grid->insertTank(tankpos, i);
     }
+    
     
     //Fill quadtrees
     for (Tank& tank : tanks) {
@@ -170,7 +173,7 @@ void Game::update(float deltaTime)
         }
         else {            
             //Add points to quadtree of red tanks
-            qtRed->add(tankpos);            
+            qtRed->add(tankpos);
         }
     }
     
@@ -197,10 +200,12 @@ void Game::update(float deltaTime)
     // Checking collision tank-tank
     for (Tank& tank : tanks) {
         if (!tank.active) continue;
+        /*auto thread = closestEnemy_threadpool.enqueue([&]() {grid->tankCollisionWithTank(tank, &tanks); });
+        thread.get();*/
         grid->tankCollisionWithTank(tank, &tanks);
     }
 
-    // Checking collision tank-rocket and add explosions and smoke when collided ----------bugged
+    // Checking collision tank-rocket and add explosions and smoke when collided
     for (Rocket& rocket : rockets) {
         if (!rocket.active) continue;
 
@@ -241,9 +246,9 @@ void Game::update(float deltaTime)
             vec2 rocketpos = rocket.get_position();
             int inside = 0;
 
-            for (int i = 0, j = R_forcefield_hull.size() - 1; i < R_forcefield_hull.size(); j = i++) {
-                vec2 hullpos1 = R_forcefield_hull[i];
-                vec2 hullpos2 = R_forcefield_hull[j];
+            for (int i = 0, j = convex_hull.size() - 1; i < convex_hull.size(); j = i++) {
+                vec2 hullpos1 = convex_hull[i];
+                vec2 hullpos2 = convex_hull[j];
 
                 // true if point has passed between 2 points of hull
                 if (((hullpos1.y > rocketpos.y) != (hullpos2.y > rocketpos.y))
@@ -330,10 +335,10 @@ void Game::draw()
     }
 
     //Draw forcefield (mostly for debugging, its kinda ugly..)
-    for (size_t i = 0; i < R_forcefield_hull.size(); i++)
+    for (size_t i = 0; i < convex_hull.size(); i++)
     {
-        vec2 line_start = R_forcefield_hull.at(i);
-        vec2 line_end = R_forcefield_hull.at((i + 1) % R_forcefield_hull.size());
+        vec2 line_start = convex_hull.at(i);
+        vec2 line_end = convex_hull.at((i + 1) % convex_hull.size());
         line_start.x += HEALTHBAR_OFFSET;
         line_end.x += HEALTHBAR_OFFSET;
         screen->line(line_start, line_end, 0x0000ff);

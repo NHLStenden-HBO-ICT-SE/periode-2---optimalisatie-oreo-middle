@@ -5,7 +5,7 @@ class Sort
 {
 
 private:
-	void vec2MergeSortInterval(vector<vec2>& points, int l, int mid, int r);
+	void vec2Merge(vector<vec2>& points, int l, int mid, int r);
 
 public:
 	Sort();
