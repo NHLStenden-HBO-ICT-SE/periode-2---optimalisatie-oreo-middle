@@ -41,8 +41,8 @@ const static vec2 rocket_size(6, 6);
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
 
-int Num_Threads = thread::hardware_concurrency();
-ThreadPool threadpool(Num_Threads);
+//int Num_Threads = thread::hardware_concurrency();
+//ThreadPool threadpool(Num_Threads);
 
 // -----------------------------------------------------------
 // Initialize the simulation state
