@@ -14,17 +14,20 @@ ConvexHull::ConvexHull(vector<vec2> points) {
 }
 
 ConvexHull::~ConvexHull() {
-
+	
 }
 
 void ConvexHull::calcConvexHull() {
 	// Sort points at x axis (or y axis if x is the same)
+	vector<vec2>* temp = {};
 	sort->vec2Mergesort(_points, 0, _points.size() - 1);
+	delete temp;
 
 	// Two lists for bottom and top side of convexhull
 	top.resize(_points.size());
 	bot.resize(_points.size());
 
+	// Two threads for bottom and top half of calculating convexhull
 	auto threadTop = threadpool.enqueue([this]() {
 		//Bottomhalf left to right
 		for (size_t i = 0; i < _points.size(); i++) {
@@ -51,6 +54,7 @@ void ConvexHull::calcConvexHull() {
 
 	// Merge bot and top vector together
 	top.insert(top.end(), bot.begin(), bot.end()-1);
+
 	resultPoints = top;
 }
 

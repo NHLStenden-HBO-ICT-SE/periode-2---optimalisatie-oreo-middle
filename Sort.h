@@ -5,6 +5,7 @@ class Sort
 {
 
 private:
+		
 	void vec2Merge(vector<vec2>& points, int l, int mid, int r);
 
 public:
