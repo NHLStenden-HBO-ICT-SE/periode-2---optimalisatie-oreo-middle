@@ -10,26 +10,16 @@ namespace Tmpl8
 	void Sort::vec2Mergesort(vector<vec2>& points, int l, int r) {
         int mid = (l + r) / 2;
         if (l < r) {
-            // Create two threads for sorting the left and right halves of the vector
-            /*auto thread1 = sort_threadpool.enqueue([this, &points, l, mid] {
-                vec2Mergesort(points, l, mid);
-            });
-            auto thread2 = sort_threadpool.enqueue([this, &points, mid, r] {
-                vec2Mergesort(points, mid+1, r);
-            });
-            thread1.get();
-            thread2.get();*/
-
             vec2Mergesort(points, l, mid);
             vec2Mergesort(points, mid + 1, r);
             vec2Merge(points, l, mid, r);
         }
 	}
     void Sort::vec2Merge(vector<vec2>& points, int l, int mid, int r) {
-        vector<vec2> temp = {};
-
         int lpos = l;
         int rpos = mid + 1;
+
+        vector<vec2> temp = {};
 
         // Loop until end of lpos or rpos, choose larger one and place them in order
         while (lpos <= mid && rpos <= r) {
@@ -61,10 +51,9 @@ namespace Tmpl8
             rpos++;
         }
 
-        for (int i = l; i <= r; i++) {
-            int j = i - l;
-            points[i] = temp[j];
-        }
+        // Copy the elements from the temporary vector back to the original array
+        for (size_t i = l; i <= r; i++)
+            points[i] = std::move(temp[i - l]);
     }
 
 }

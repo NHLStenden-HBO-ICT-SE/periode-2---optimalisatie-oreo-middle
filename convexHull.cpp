@@ -19,9 +19,7 @@ ConvexHull::~ConvexHull() {
 
 void ConvexHull::calcConvexHull() {
 	// Sort points at x axis (or y axis if x is the same)
-	vector<vec2>* temp = {};
 	sort->vec2Mergesort(_points, 0, _points.size() - 1);
-	delete temp;
 
 	// Two lists for bottom and top side of convexhull
 	top.resize(_points.size());

@@ -41,8 +41,8 @@ const static vec2 rocket_size(6, 6);
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
 
-//int Num_Threads = thread::hardware_concurrency();
-//ThreadPool threadpool(Num_Threads);
+int Num_Threads = thread::hardware_concurrency();
+ThreadPool threadpool(Num_Threads);
 
 // -----------------------------------------------------------
 // Initialize the simulation state
@@ -150,64 +150,79 @@ void Game::update(float deltaTime)
         }
     }
 
-    // Calculate convex hull for 'rocket barrier'
-    ConvexHull convexHull(forcefield_hull);
-    convex_hull = convexHull.getResultslist();
+    auto thread_createConvexhull = threadpool.enqueue([this] {
+        // Calculate convex hull for 'rocket barrier'
+        ConvexHull convexHull(forcefield_hull);
+        convex_hull = convexHull.getResultslist();
+    });
+    
 
     // Adding tanks to grid
-    for (int i = 0; i < tanks.size(); i++) {
-        if (!tanks[i].active) continue;
+    auto thread_addTanks = threadpool.enqueue([this] {
+        for (int i = 0; i < tanks.size(); i++) {
+            if (!tanks[i].active) continue;
 
-        vec2 tankpos = tanks[i].get_position();
-        grid->insertTank(tankpos, i);
-    }
+            vec2 tankpos = tanks[i].get_position();
+            grid->insertTank(tankpos, i);
+        }
+    });
     
-    
-    //Fill quadtrees
+    //Update tanks
     for (Tank& tank : tanks) {
         if (!tank.active) continue;
-        vec2 tankpos = tank.get_position();
-        if (tank.allignment == BLUE) {            
-            //Add points to quadtree of blue tanks
-            qtBlue->add(tankpos);
-        }
-        else {            
-            //Add points to quadtree of red tanks
-            qtRed->add(tankpos);
-        }
+        //Move tanks according to speed and reload
+        tank.tick(background_terrain);
     }
+    
+    //Fill quadtrees
+    auto thread_fillQuadtree = threadpool.enqueue([this] {
+        for (Tank& tank : tanks) {
+            if (!tank.active) continue;
+            if (!tank.rocket_reloaded()) continue;
+            vec2 tankpos = tank.get_position();
+            if (tank.allignment == BLUE) {
+                //Add points to quadtree of blue tanks
+                qtBlue->add(tankpos);
+            }
+            else {
+                //Add points to quadtree of red tanks
+                qtRed->add(tankpos);
+            }
+        }
+    });
+    
     
     //Update tanks
     for (Tank& tank : tanks)
     {
-        if (tank.active)
-        {
-            //Move tanks according to speed and nudges (see above) also reload
-            tank.tick(background_terrain);
+        if (!tank.active) continue;
+        if (!tank.rocket_reloaded()) continue;
 
-            //Shoot at closest target if reloaded
-            if (tank.rocket_reloaded())
-            {
-                vec2 target = find_closest_enemy(tank);
+        //Shoot at closest target if reloaded
+        thread_fillQuadtree.wait();
+        vec2 target = find_closest_enemy(tank);
 
-                rockets.push_back(Rocket(tank.position, (target - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+        rockets.push_back(Rocket(tank.position, (target - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
 
-                tank.reload_rocket();
-            }
-        }
+        tank.reload_rocket();
     }
 
     // Checking collision tank-tank
     for (Tank& tank : tanks) {
         if (!tank.active) continue;
-        /*auto thread = closestEnemy_threadpool.enqueue([&]() {grid->tankCollisionWithTank(tank, &tanks); });
-        thread.get();*/
+
+        // Wait for the tanks to be added to grid before collision check
+        thread_addTanks.wait();
+
         grid->tankCollisionWithTank(tank, &tanks);
     }
 
     // Checking collision tank-rocket and add explosions and smoke when collided
     for (Rocket& rocket : rockets) {
         if (!rocket.active) continue;
+
+        // Wait for the tanks to be added to grid before collision check
+        thread_addTanks.wait();
 
         int collisionindex = grid->rocketCollisionWithTank(rocket, &tanks);
         if (collisionindex != -1) {
@@ -245,6 +260,9 @@ void Game::update(float deltaTime)
         {
             vec2 rocketpos = rocket.get_position();
             int inside = 0;
+
+            // Wait for convexhull calculation to be done
+            thread_createConvexhull.wait();
 
             for (int i = 0, j = convex_hull.size() - 1; i < convex_hull.size(); j = i++) {
                 vec2 hullpos1 = convex_hull[i];
