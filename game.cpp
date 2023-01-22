@@ -214,7 +214,27 @@ void Game::update(float deltaTime)
         // Wait for the tanks to be added to grid before collision check
         thread_addTanks.wait();
 
-        grid->tankCollisionWithTank(tank, &tanks);
+        vector<int> collisionObjects = grid->tankCollisionWithTank(tank);
+
+        // check collision with every tank that is in neighbour gridcells, nudges tanks away from eachother if collided
+        for (int& collisionObject : collisionObjects) {
+            if (&tank == &(tanks.at(collisionObject))) continue;
+
+            vec2 tankpos = tank.get_position();
+
+            vec2 otherTankpos = tanks.at(collisionObject).get_position();
+
+            vec2 dir = tankpos - otherTankpos;
+            float dir_squared_len = dir.sqr_length();
+
+            float col_squared_len = (tank.collision_radius + tank.collision_radius);
+            col_squared_len *= col_squared_len;
+
+            if (dir_squared_len < col_squared_len)
+            {
+                tank.push(dir.normalized(), 1.f);
+            }
+        }
     }
 
     // Checking collision tank-rocket and add explosions and smoke when collided

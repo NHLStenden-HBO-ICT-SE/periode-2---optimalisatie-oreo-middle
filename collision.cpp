@@ -17,7 +17,7 @@ namespace Tmpl8
         grid[gridCell.y][gridCell.x].push_back(tankIndex);
     }
 
-    void Collision::tankCollisionWithTank(Tank& currentTank, vector<Tank>* tanks) {
+    vector<int> Collision::tankCollisionWithTank(Tank& currentTank) {
         vec2 tankpos = currentTank.get_position();
         gridCell.x = floor(tankpos.x / cellwidth);
         gridCell.y = floor(tankpos.y / cellheight);
@@ -33,25 +33,7 @@ namespace Tmpl8
             }
         }
 
-        // check collision with every tank that is in neighbour gridcells, nudges tanks away from eachother if collided
-        for (int& otherTankindex : otherTankindexes) {
-            if (&currentTank == &(tanks->at(otherTankindex))) continue;
-
-            vec2 tankpos = currentTank.get_position();
-
-            vec2 otherTankpos = tanks->at(otherTankindex).get_position();
-
-            vec2 dir = tankpos - otherTankpos;
-            float dir_squared_len = dir.sqr_length();
-
-            float col_squared_len = (currentTank.collision_radius + currentTank.collision_radius);
-            col_squared_len *= col_squared_len;
-
-            if (dir_squared_len < col_squared_len)
-            {
-                currentTank.push(dir.normalized(), 1.f);
-            }
-        }
+        return otherTankindexes;
     }
 
     int Collision::rocketCollisionWithTank(Rocket& currentRocket, vector<Tank>* tanks) {

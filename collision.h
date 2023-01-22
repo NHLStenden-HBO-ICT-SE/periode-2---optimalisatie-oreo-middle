@@ -21,7 +21,7 @@ public:
     ~Collision();
 
     void insertTank(vec2& tankpos, int tankIndex);
-    void tankCollisionWithTank(Tank& currentTank, vector<Tank>* tanks);
+    vector<int> tankCollisionWithTank(Tank& currentTank);
     int rocketCollisionWithTank(Rocket& currentRocket, vector<Tank>* tanks);
     vector<int> tankCollisionWithParticleBeam(Particle_beam currentBeam);
 
