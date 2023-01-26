@@ -41,10 +41,8 @@ const static vec2 rocket_size(6, 6);
 const static float tank_radius = 3.f;
 const static float rocket_radius = 5.f;
 
-int Num_Threads = thread::hardware_concurrency();
-ThreadPool threadpool(Num_Threads);
-
-static timer t;
+int num_threads = thread::hardware_concurrency();
+ThreadPool threadpool(num_threads);
 
 // -----------------------------------------------------------
 // Initialize the simulation state
@@ -189,12 +187,12 @@ void Game::update(float deltaTime)
         }
     });
     
+    thread_fillQuadtree.wait();
     //Update tanks
     for (Tank* tank : tanks_alive) {
         if (!tank->rocket_reloaded()) continue;
 
         //Shoot at closest target if reloaded
-        thread_fillQuadtree.wait();
         vec2 target = find_closest_enemy(*tank);
 
         rockets.push_back(Rocket(tank->position, (target - tank->position).normalized() * 3, rocket_radius, tank->allignment, ((tank->allignment == RED) ? &rocket_red : &rocket_blue)));
@@ -203,11 +201,10 @@ void Game::update(float deltaTime)
     }
     
 
+    // Wait for the tanks to be added to grid before collision check
+    thread_addTanks.wait();
     // Checking collision tank-tank
     for (Tank* tank : tanks_alive) {
-
-        // Wait for the tanks to be added to grid before collision check
-        thread_addTanks.wait();
 
         vector<int> collisionObjects = grid->tankCollisionWithTank(tank->get_position());
 
@@ -215,7 +212,6 @@ void Game::update(float deltaTime)
         for (int& collisionObject : collisionObjects) {
             if (tank == tanks_alive.at(collisionObject)) continue;
             vec2 tankpos = tank->get_position();
-
             vec2 otherTankpos = tanks_alive.at(collisionObject)->get_position();
 
             vec2 dir = tankpos - otherTankpos;
@@ -231,12 +227,11 @@ void Game::update(float deltaTime)
         }
     }
     
+    // Wait for the tanks to be added to grid before collision check
+    thread_addTanks.wait();
     // Checking collision tank-rocket and add explosions and smoke when collided
     for (Rocket& rocket : rockets) {
         if (!rocket.active) continue;
-
-        // Wait for the tanks to be added to grid before collision check
-        thread_addTanks.wait();
 
         int collisionindex = grid->rocketCollisionWithTank(rocket, tanks_alive);
         if (collisionindex != -1) {

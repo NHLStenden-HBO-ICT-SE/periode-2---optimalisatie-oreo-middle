@@ -40,7 +40,7 @@ namespace Tmpl8
         gridCell.x = floor(rocketpos.x / cellwidth);
         gridCell.y = floor(rocketpos.y / cellheight);
 
-        vector<int> otherTankindexes;
+        otherTankindexes.clear();
 
         // For every direction checking neighbour gridcells and adding tankindex to list
         for (int i = -1; i < 2; i++) {

@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 
 namespace Tmpl8
 {
@@ -24,7 +25,6 @@ class Game
     void measure_performance();
 
     vec2& find_closest_enemy(Tank& tank);
-    void died(Tank* tank);
 
     void mouse_up(int button)
     { /* implement if you want to detect mouse button presses */

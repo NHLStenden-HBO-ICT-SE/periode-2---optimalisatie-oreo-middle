@@ -16,7 +16,7 @@ private:
     vector<vector<vector<int>>> grid;
 
     vector<int> otherTankindexes;
-
+    std::mutex collision_mtx;
 
 public:
     Collision();
