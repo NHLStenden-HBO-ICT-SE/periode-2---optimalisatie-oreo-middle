@@ -44,6 +44,8 @@ const static float rocket_radius = 5.f;
 int Num_Threads = thread::hardware_concurrency();
 ThreadPool threadpool(Num_Threads);
 
+static timer t;
+
 // -----------------------------------------------------------
 // Initialize the simulation state
 // This function does not count for the performance multiplier
@@ -188,8 +190,7 @@ void Game::update(float deltaTime)
     });
     
     //Update tanks
-    for (Tank* tank : tanks_alive)
-    {
+    for (Tank* tank : tanks_alive) {
         if (!tank->rocket_reloaded()) continue;
 
         //Shoot at closest target if reloaded
@@ -207,7 +208,8 @@ void Game::update(float deltaTime)
 
         // Wait for the tanks to be added to grid before collision check
         thread_addTanks.wait();
-        vector<int> collisionObjects = grid->tankCollisionWithTank(*tank);
+
+        vector<int> collisionObjects = grid->tankCollisionWithTank(tank->get_position());
 
         // check collision with every tank that is in neighbour gridcells, nudges tanks away from eachother if collided
         for (int& collisionObject : collisionObjects) {

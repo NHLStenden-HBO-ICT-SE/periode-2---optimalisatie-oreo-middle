@@ -17,12 +17,11 @@ namespace Tmpl8
         grid[gridCell.y][gridCell.x].push_back(tankIndex);
     }
 
-    vector<int> Collision::tankCollisionWithTank(Tank& currentTank) {
-        vec2 tankpos = currentTank.get_position();
+    vector<int> Collision::tankCollisionWithTank(vec2& tankpos) {
         gridCell.x = floor(tankpos.x / cellwidth);
         gridCell.y = floor(tankpos.y / cellheight);
 
-        vector<int> otherTankindexes;
+        otherTankindexes.clear();
 
         // For every direction checking neighbour grid cells. 9 total
         for (int i = -1; i < 2; i++) {

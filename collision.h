@@ -15,13 +15,15 @@ private:
     vector<vector<int>> col;
     vector<vector<vector<int>>> grid;
 
+    vector<int> otherTankindexes;
+
 
 public:
     Collision();
     ~Collision();
 
     void insertTank(vec2& tankpos, int tankIndex);
-    vector<int> tankCollisionWithTank(Tank& currentTank);
+    vector<int> tankCollisionWithTank(vec2& tankpos);
     int rocketCollisionWithTank(Rocket& currentRocket, vector<Tank*>& tanks);
     vector<int> tankCollisionWithParticleBeam(Particle_beam currentBeam);
 
