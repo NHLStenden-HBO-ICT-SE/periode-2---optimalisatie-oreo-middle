@@ -5,7 +5,7 @@ namespace Tmpl8
 class Collision
 {
 private:
-    int cellwidth = 7, cellheight = 7;
+    int cellwidth = 5, cellheight = 5;
     size_t gridRowCount = floor(SCRHEIGHT / cellwidth);
     size_t gridCollCount = floor(SCRWIDTH / cellheight);
 
@@ -22,7 +22,7 @@ public:
 
     void insertTank(vec2& tankpos, int tankIndex);
     vector<int> tankCollisionWithTank(Tank& currentTank);
-    int rocketCollisionWithTank(Rocket& currentRocket, vector<Tank>* tanks);
+    int rocketCollisionWithTank(Rocket& currentRocket, vector<Tank*>& tanks);
     vector<int> tankCollisionWithParticleBeam(Particle_beam currentBeam);
 
     void clear();

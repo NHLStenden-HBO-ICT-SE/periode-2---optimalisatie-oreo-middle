@@ -30,8 +30,11 @@ private:
     std::unique_ptr<Node> root;
     std::unique_ptr<Boundries> boundries;
 
-    static const int Threshold = 10;
-    static const int MaxDepth = 20;
+    //List of nodes, used for clearing and re-using node instances
+    std::vector<std::unique_ptr<Node>> nodePool;
+
+    static const int Threshold = 50;
+    static const int MaxDepth = 10;
 
     int Quadtree::getQuadrant(vec2& p, Boundries* boundries);
     void Quadtree::add(Node* node, vec2& p, Boundries* boundries, int depth);
@@ -42,7 +45,7 @@ private:
     vector<vec2> Quadtree::findNeighbourPoints(Node* node, int dir);
 
     void Quadtree::clear(Node* node);
-    void Quadtree::newBoundries(Boundries* boundries, int q);
+    void Quadtree::newBoundries(Boundries* boundries, int quadrant);
 };
 
 }

@@ -24,6 +24,7 @@ class Game
     void measure_performance();
 
     vec2& find_closest_enemy(Tank& tank);
+    void died(Tank* tank);
 
     void mouse_up(int button)
     { /* implement if you want to detect mouse button presses */
@@ -49,6 +50,7 @@ class Game
     Surface* screen;
 
     vector<Tank> tanks;
+    vector<Tank*> tanks_alive;
     vector<Rocket> rockets;
     vector<Smoke> smokes;
     vector<Explosion> explosions;

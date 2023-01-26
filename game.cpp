@@ -1,7 +1,7 @@
 #include "precomp.h" // include (only) this in every .cpp file
 
-constexpr auto num_tanks_blue = 2048;
-constexpr auto num_tanks_red = 2048;
+constexpr size_t num_tanks_blue = 2048;
+constexpr size_t num_tanks_red = 2048;
 
 constexpr auto tank_max_health = 1000;
 constexpr auto rocket_hit_value = 60;
@@ -54,6 +54,7 @@ void Game::init()
     frame_count_font = new Font("assets/digital_small.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ:?!=-0123456789.");
 
     tanks.reserve(num_tanks_blue + num_tanks_red);
+    tanks_alive.reserve(num_tanks_blue + num_tanks_red);
 
     uint max_rows = 24;
 
@@ -70,12 +71,14 @@ void Game::init()
     {
         vec2 position{ start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing) };
         tanks.push_back(Tank(position.x, position.y, BLUE, &tank_blue, &smoke, 1100.f, position.y + 16, tank_radius, tank_max_health, tank_max_speed));
+        tanks_alive.push_back(&tanks.at(i));
     }
     //Spawn red tanks
     for (int i = 0; i < num_tanks_red; i++)
     {
         vec2 position{ start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing) };
         tanks.push_back(Tank(position.x, position.y, RED, &tank_red, &smoke, 100.f, position.y + 16, tank_radius, tank_max_health, tank_max_speed));
+        tanks_alive.push_back(&tanks.at(num_tanks_blue + i));
     }
 
     //Calculate the route to the destination for each tank using BFS
@@ -141,13 +144,10 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point)
 // -----------------------------------------------------------
 void Game::update(float deltaTime)
 {
-    //"forcefield" points around active tanks
-    for (Tank& tank : tanks)
+    //"forcefield" points around tanks_alive
+    for (Tank* tank : tanks_alive)
     {
-        if (tank.active)
-        {
-            forcefield_hull.push_back(tank.position);
-        }
+        forcefield_hull.push_back(tank->position);
     }
 
     auto thread_createConvexhull = threadpool.enqueue([this] {
@@ -159,28 +159,24 @@ void Game::update(float deltaTime)
 
     // Adding tanks to grid
     auto thread_addTanks = threadpool.enqueue([this] {
-        for (int i = 0; i < tanks.size(); i++) {
-            if (!tanks[i].active) continue;
-
-            vec2 tankpos = tanks[i].get_position();
+        for (int i = 0; i < tanks_alive.size(); i++) {
+            vec2 tankpos = tanks_alive[i]->get_position();
             grid->insertTank(tankpos, i);
         }
     });
     
     //Update tanks
-    for (Tank& tank : tanks) {
-        if (!tank.active) continue;
+    for (Tank* tank : tanks_alive) {
         //Move tanks according to speed and reload
-        tank.tick(background_terrain);
+        tank->tick(background_terrain);
     }
     
     //Fill quadtrees
     auto thread_fillQuadtree = threadpool.enqueue([this] {
-        for (Tank& tank : tanks) {
-            if (!tank.active) continue;
-            if (!tank.rocket_reloaded()) continue;
-            vec2 tankpos = tank.get_position();
-            if (tank.allignment == BLUE) {
+        for (Tank* tank : tanks_alive) {
+            if (!tank->rocket_reloaded()) continue;
+            vec2 tankpos = tank->get_position();
+            if (tank->allignment == BLUE) {
                 //Add points to quadtree of blue tanks
                 qtBlue->add(tankpos);
             }
@@ -191,52 +187,48 @@ void Game::update(float deltaTime)
         }
     });
     
-    
     //Update tanks
-    for (Tank& tank : tanks)
+    for (Tank* tank : tanks_alive)
     {
-        if (!tank.active) continue;
-        if (!tank.rocket_reloaded()) continue;
+        if (!tank->rocket_reloaded()) continue;
 
         //Shoot at closest target if reloaded
         thread_fillQuadtree.wait();
-        vec2 target = find_closest_enemy(tank);
+        vec2 target = find_closest_enemy(*tank);
 
-        rockets.push_back(Rocket(tank.position, (target - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+        rockets.push_back(Rocket(tank->position, (target - tank->position).normalized() * 3, rocket_radius, tank->allignment, ((tank->allignment == RED) ? &rocket_red : &rocket_blue)));
 
-        tank.reload_rocket();
+        tank->reload_rocket();
     }
+    
 
     // Checking collision tank-tank
-    for (Tank& tank : tanks) {
-        if (!tank.active) continue;
+    for (Tank* tank : tanks_alive) {
 
         // Wait for the tanks to be added to grid before collision check
         thread_addTanks.wait();
-
-        vector<int> collisionObjects = grid->tankCollisionWithTank(tank);
+        vector<int> collisionObjects = grid->tankCollisionWithTank(*tank);
 
         // check collision with every tank that is in neighbour gridcells, nudges tanks away from eachother if collided
         for (int& collisionObject : collisionObjects) {
-            if (&tank == &(tanks.at(collisionObject))) continue;
+            if (tank == tanks_alive.at(collisionObject)) continue;
+            vec2 tankpos = tank->get_position();
 
-            vec2 tankpos = tank.get_position();
-
-            vec2 otherTankpos = tanks.at(collisionObject).get_position();
+            vec2 otherTankpos = tanks_alive.at(collisionObject)->get_position();
 
             vec2 dir = tankpos - otherTankpos;
             float dir_squared_len = dir.sqr_length();
 
-            float col_squared_len = (tank.collision_radius + tank.collision_radius);
+            float col_squared_len = (tank->collision_radius + tank->collision_radius);
             col_squared_len *= col_squared_len;
 
             if (dir_squared_len < col_squared_len)
             {
-                tank.push(dir.normalized(), 1.f);
+                tank->push(dir.normalized(), 1.f);
             }
         }
     }
-
+    
     // Checking collision tank-rocket and add explosions and smoke when collided
     for (Rocket& rocket : rockets) {
         if (!rocket.active) continue;
@@ -244,13 +236,13 @@ void Game::update(float deltaTime)
         // Wait for the tanks to be added to grid before collision check
         thread_addTanks.wait();
 
-        int collisionindex = grid->rocketCollisionWithTank(rocket, &tanks);
+        int collisionindex = grid->rocketCollisionWithTank(rocket, tanks_alive);
         if (collisionindex != -1) {
-            explosions.push_back(Explosion(&explosion, tanks.at(collisionindex).get_position()));
+            explosions.push_back(Explosion(&explosion, tanks_alive.at(collisionindex)->get_position()));
 
-            if (tanks.at(collisionindex).hit(rocket_hit_value))
+            if (tanks_alive.at(collisionindex)->hit(rocket_hit_value))
             {
-                smokes.push_back(Smoke(smoke, tanks.at(collisionindex).get_position() - vec2(7, 24)));
+                smokes.push_back(Smoke(smoke, tanks_alive.at(collisionindex)->get_position() - vec2(7, 24)));
             }
         }
     }
@@ -306,7 +298,7 @@ void Game::update(float deltaTime)
     //Update particle beams
     for (Particle_beam& particle_beam : particle_beams)
     {
-        particle_beam.tick(tanks);
+        particle_beam.tick(tanks_alive);
 
         // Checks collision with tanks in range of particle beam on the grid
         vector<int> collisionTanks = grid->tankCollisionWithParticleBeam(particle_beam);
@@ -314,9 +306,9 @@ void Game::update(float deltaTime)
         for (int& collisionTank : collisionTanks) {
 
             // Add smoke if tank is dead
-            if (tanks.at(collisionTank).hit(particle_beam.damage))
+            if (tanks_alive.at(collisionTank)->hit(particle_beam.damage))
             {
-                smokes.push_back(Smoke(smoke, tanks.at(collisionTank).position - vec2(0, 48)));
+                smokes.push_back(Smoke(smoke, tanks_alive.at(collisionTank)->position - vec2(0, 48)));
             }
         }
         
@@ -324,6 +316,7 @@ void Game::update(float deltaTime)
 
 
     //Remove and clear:
+    tanks_alive.erase(std::remove_if(tanks_alive.begin(), tanks_alive.end(), [](const Tank* tank) {return !tank->active; }), tanks_alive.end());
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
     grid->clear();

@@ -36,7 +36,7 @@ namespace Tmpl8
         return otherTankindexes;
     }
 
-    int Collision::rocketCollisionWithTank(Rocket& currentRocket, vector<Tank>* tanks) {
+    int Collision::rocketCollisionWithTank(Rocket& currentRocket, vector<Tank*>& tanks) {
         vec2 rocketpos = currentRocket.get_position();
         gridCell.x = floor(rocketpos.x / cellwidth);
         gridCell.y = floor(rocketpos.y / cellheight);
@@ -54,8 +54,8 @@ namespace Tmpl8
 
         // Check collision with every tank of neighbour gridcells and return if collided
         for (int& otherTankindex : otherTankindexes) {
-            if (currentRocket.allignment == tanks->at(otherTankindex).allignment) continue;
-            if (currentRocket.intersects(tanks->at(otherTankindex).get_position(), tanks->at(otherTankindex).get_collision_radius())) {
+            if (currentRocket.allignment == tanks.at(otherTankindex)->allignment) continue;
+            if (currentRocket.intersects(tanks.at(otherTankindex)->get_position(), tanks.at(otherTankindex)->get_collision_radius())) {
                 currentRocket.active = false;
                 return otherTankindex;
             }
