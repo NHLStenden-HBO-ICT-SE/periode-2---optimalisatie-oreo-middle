@@ -51,13 +51,18 @@ class Game
 
     vector<Tank> tanks;
     vector<Tank*> tanks_alive;
+    std::mutex tanks_mutex;
+
     vector<Rocket> rockets;
     vector<Smoke> smokes;
     vector<Explosion> explosions;
     vector<Particle_beam> particle_beams;
 
     Terrain background_terrain;
+
     std::vector<vec2> forcefield_hull;
+    std::mutex forcefield_mutex;
+
     std::vector<vec2> convex_hull;
 
     vector<vec2> redTankposlist;
