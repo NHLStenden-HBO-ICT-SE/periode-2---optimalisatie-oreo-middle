@@ -51,7 +51,6 @@ class Game
 
     vector<Tank> tanks;
     vector<Tank*> tanks_alive;
-    std::mutex tanks_mutex;
 
     vector<Rocket> rockets;
     vector<Smoke> smokes;
@@ -78,8 +77,11 @@ class Game
 
     std::unique_ptr<Quadtree> qtBlue = make_unique<Quadtree>();
     std::unique_ptr<Quadtree> qtRed = make_unique<Quadtree>();
+    std::mutex qt_mutex;
 
     std::unique_ptr<Collision> grid = make_unique<Collision>();
+    std::mutex grid_mutex;
+
 };
 
 

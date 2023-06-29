@@ -10,59 +10,70 @@ namespace Tmpl8
 
     Collision::~Collision() {}
 
-    void Collision::insertTank(vec2& tankpos, int tankIndex) {
+    void Collision::insertTank(vec2& tankpos, Tank* tank) {
         gridCell.x = floor(tankpos.x / cellwidth);
         gridCell.y = floor(tankpos.y / cellheight);
 
-        grid[gridCell.y][gridCell.x].push_back(tankIndex);
+        grid[gridCell.y][gridCell.x].push_back(tank);
     }
 
-    vector<int> Collision::tankCollisionWithTank(vec2& tankpos) {
+    void Collision::removeTank(vec2& tankpos, Tank* tank) {
         gridCell.x = floor(tankpos.x / cellwidth);
         gridCell.y = floor(tankpos.y / cellheight);
 
-        otherTankindexes.clear();
+        std::vector<Tank*>& gridCellVector = grid[gridCell.y][gridCell.x];
+        auto it = std::find(gridCellVector.begin(), gridCellVector.end(), tank);
+        if (it != gridCellVector.end()) {
+            gridCellVector.erase(it);
+        }
+    }
+
+    vector<Tank*> Collision::tankCollisionWithTank(vec2& tankpos) {
+        gridCell.x = floor(tankpos.x / cellwidth);
+        gridCell.y = floor(tankpos.y / cellheight);
+
+        otherTanks.clear();
 
         // For every direction checking neighbour grid cells. 9 total
         for (int i = -1; i < 2; i++) {
             for (int j = -1; j < 2;j++) {
-                for (int& index : grid[gridCell.y + i][gridCell.x + j]) {
-                    otherTankindexes.push_back(index);
+                for (Tank* tank : grid[gridCell.y + i][gridCell.x + j]) {
+                    otherTanks.push_back(tank);
                 }
             }
         }
 
-        return otherTankindexes;
+        return otherTanks;
     }
 
-    int Collision::rocketCollisionWithTank(Rocket& currentRocket, vector<Tank*>& tanks) {
+    Tank* Collision::rocketCollisionWithTank(Rocket& currentRocket, vector<Tank*>& tanks) {
         vec2 rocketpos = currentRocket.get_position();
         gridCell.x = floor(rocketpos.x / cellwidth);
         gridCell.y = floor(rocketpos.y / cellheight);
 
-        otherTankindexes.clear();
+        otherTanks.clear();
 
         // For every direction checking neighbour gridcells and adding tankindex to list
         for (int i = -1; i < 2; i++) {
             for (int j = -1; j < 2; j++) {
-                for (int& index : grid[gridCell.y + i][gridCell.x + j]) {
-                    otherTankindexes.push_back(index);
+                for (Tank* index : grid[gridCell.y + i][gridCell.x + j]) {
+                    otherTanks.push_back(index);
                 }
             }
         }
 
         // Check collision with every tank of neighbour gridcells and return if collided
-        for (int& otherTankindex : otherTankindexes) {
-            if (currentRocket.allignment == tanks.at(otherTankindex)->allignment) continue;
-            if (currentRocket.intersects(tanks.at(otherTankindex)->get_position(), tanks.at(otherTankindex)->get_collision_radius())) {
+        for (Tank* otherTank : otherTanks) {
+            if (currentRocket.allignment == otherTank->allignment) continue;
+            if (currentRocket.intersects(otherTank->get_position(), otherTank->get_collision_radius())) {
                 currentRocket.active = false;
-                return otherTankindex;
+                return otherTank;
             }
         }
-        return -1;
+        return NULL;
     }
 
-    vector<int> Collision::tankCollisionWithParticleBeam(Particle_beam currentBeam) {
+    vector<Tank*> Collision::tankCollisionWithParticleBeam(Particle_beam currentBeam) {
         // Upperleft most point of particel beam
         gridCell.x = floor(currentBeam.min_position.x / cellwidth);
         gridCell.y = floor(currentBeam.min_position.y / cellheight);
@@ -71,18 +82,18 @@ namespace Tmpl8
         gridrange.x = floor((currentBeam.max_position.x - currentBeam.min_position.x) / cellwidth);
         gridrange.y = floor((currentBeam.max_position.y - currentBeam.min_position.y) / cellwidth);
 
-        vector<int> otherTankindexes;
+        vector<Tank*> otherTanks;
 
         // add tanks of cell to list for every gridcell inrange of particle beam
         for (int i = 0; i < gridrange.y; i++) {
             for (int j = 0; j < gridrange.x; j++) {
-                for (int& index : grid[gridCell.y + i][gridCell.x + j]) {
-                    otherTankindexes.push_back(index);
+                for (Tank* tank : grid[gridCell.y + i][gridCell.x + j]) {
+                    otherTanks.push_back(tank);
                 }
             }
         }
 
-        return otherTankindexes;
+        return otherTanks;
     }
 
     void Collision::clear() {
@@ -92,4 +103,17 @@ namespace Tmpl8
             }
         }
     };
+
+    void Collision::updatePos(vec2& tank_targetPos, vec2& tank_currentPos, Tank* tank) {
+        target_gridCell.x = floor(tank_targetPos.x / cellwidth);
+        target_gridCell.y = floor(tank_targetPos.y / cellheight);
+
+        current_gridCell.x = floor(tank_currentPos.x / cellwidth);
+        current_gridCell.y = floor(tank_currentPos.y / cellheight);
+
+        if (target_gridCell.x != current_gridCell.x || target_gridCell.y != current_gridCell.y) {
+            removeTank(tank_currentPos, tank);
+            insertTank(tank_targetPos, tank);
+        }
+    }
 }

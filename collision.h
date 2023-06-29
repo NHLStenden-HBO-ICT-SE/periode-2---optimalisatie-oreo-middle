@@ -10,24 +10,28 @@ private:
     size_t gridCollCount = floor(SCRWIDTH / cellheight);
 
     point gridCell = {};
+    point current_gridCell = {};
+    point target_gridCell = {};
     vec2 gridrange = {};
     
-    vector<vector<int>> col;
-    vector<vector<vector<int>>> grid;
+    vector<vector<Tank*>> col;
+    vector<vector<vector<Tank*>>> grid;
 
-    vector<int> otherTankindexes;
+    vector<Tank*> otherTanks;
     std::mutex collision_mtx;
 
 public:
     Collision();
     ~Collision();
 
-    void insertTank(vec2& tankpos, int tankIndex);
-    vector<int> tankCollisionWithTank(vec2& tankpos);
-    int rocketCollisionWithTank(Rocket& currentRocket, vector<Tank*>& tanks);
-    vector<int> tankCollisionWithParticleBeam(Particle_beam currentBeam);
+    void insertTank(vec2& tankpos, Tank* tank);
+    void removeTank(vec2& tankpos, Tank* tank);
+    vector<Tank*> tankCollisionWithTank(vec2& tankpos);
+    Tank* rocketCollisionWithTank(Rocket& currentRocket, vector<Tank*>& tanks);
+    vector<Tank*> tankCollisionWithParticleBeam(Particle_beam currentBeam);
 
     void clear();
+    void updatePos(vec2& tank_targetPos, vec2& tank_currentPos, Tank* tank);
 };
 
 }

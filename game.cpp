@@ -87,6 +87,13 @@ void Game::init()
         t.set_route(background_terrain.get_route(t, t.target));
     }
 
+    // Adding tanks to grid
+    for (int i = 0; i < tanks_alive.size(); i++) {
+        vec2 tankpos = tanks_alive[i]->get_position();
+
+        grid->insertTank(tankpos, tanks_alive[i]);
+    }
+
     particle_beams.push_back(Particle_beam(vec2(590, 327), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(64, 64), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, particle_beam_hit_value));
@@ -105,14 +112,17 @@ void Game::shutdown()
 // -----------------------------------------------------------
 vec2& Game::find_closest_enemy(Tank& tank)
 {
-
     vector<vec2> candidates;
 
     if (tank.allignment == BLUE) {
+        qt_mutex.lock();
         candidates = qtRed->search(tank.get_position());
+        qt_mutex.unlock();
     }
     else {
+        qt_mutex.lock();
         candidates = qtBlue->search(tank.get_position());
+        qt_mutex.unlock();
     }
 
     //Find the closest of all candidates
@@ -148,67 +158,57 @@ void Game::update(float deltaTime)
     //"forcefield" points around tanks_alive
     for (Tank* tank : tanks_alive)
     {
-        std::lock_guard<std::mutex> lock(tanks_mutex);
-
         forcefield_mutex.lock();
         forcefield_hull.push_back(tank->position);
         forcefield_mutex.unlock();
     }
 
     auto thread_createConvexhull = threadpool.enqueue([this] {
-        // Lock the mutex before accessing/modifying forcefield_hull
-        std::lock_guard<std::mutex> lock(forcefield_mutex);
+        forcefield_mutex.lock();
 
         // Calculate convex hull for 'rocket barrier'
         ConvexHull convexHull(forcefield_hull);  
         convex_hull = convexHull.getResultslist();
+
+        forcefield_mutex.unlock();
     });
     
-
-    // Adding tanks to grid
-    auto thread_addTanks = threadpool.enqueue([this] {
-        std::lock_guard<std::mutex> lock(tanks_mutex);
-
+    //Update tanks
+    auto thread_updateTanks = threadpool.enqueue([this] {
         for (int i = 0; i < tanks_alive.size(); i++) {
-            vec2 tankpos = tanks_alive[i]->get_position();
-            grid->insertTank(tankpos, i);
+            vec2 tank_currentPos = tanks_alive[i]->get_position();
+
+            tanks_alive[i]->tick(background_terrain);
+
+            vec2 tank_targetPos = tanks_alive[i]->get_position();
+
+            grid_mutex.lock();
+            grid->updatePos(tank_targetPos, tank_currentPos, tanks_alive[i]);
+            grid_mutex.unlock();
         }
     });
-    
-    //Update tanks
-    for (Tank* tank : tanks_alive) {
-        //Move tanks according to speed and reload
-        std::lock_guard<std::mutex> lock(tanks_mutex);
-        tank->tick(background_terrain);
-    }
-    
+
     //Fill quadtrees
-    auto thread_fillQuadtree = threadpool.enqueue([this] {
-        for (Tank* tank : tanks_alive) {
-            // Lock the mutex before accessing/modifying 
-            std::lock_guard<std::mutex> lock(tanks_mutex);
+    for (Tank* tank : tanks_alive) {
+        if (!tank->rocket_reloaded()) continue;
 
-            if (!tank->rocket_reloaded()) continue;
-
-            vec2 tankpos = tank->get_position();
-            if (tank->allignment == BLUE) {
-                //Add points to quadtree of blue tanks
-                qtBlue->add(tankpos);
-            }
-            else {
-                //Add points to quadtree of red tanks
-                qtRed->add(tankpos);
-            }
+        vec2 tankpos = tank->get_position();
+        if (tank->allignment == BLUE) {
+            qt_mutex.lock();
+            //Add points to quadtree of blue tanks
+            qtBlue->add(tankpos);
+            qt_mutex.unlock();
         }
-    });
-    
-    thread_fillQuadtree.wait();
+        else {
+            qt_mutex.lock();
+            //Add points to quadtree of red tanks
+            qtRed->add(tankpos);
+            qt_mutex.unlock();
+        }
+    }
 
     //Update tanks
     for (Tank* tank : tanks_alive) {
-        // Lock the mutex before accessing/modifying tanks_alive
-        std::lock_guard<std::mutex> lock(tanks_mutex);
-
         if (!tank->rocket_reloaded()) continue;
 
         //Shoot at closest target if reloaded
@@ -218,20 +218,19 @@ void Game::update(float deltaTime)
 
         tank->reload_rocket();
     }
-    
 
     // Checking collision tank-tank
     for (Tank* tank : tanks_alive) {
-        // Lock the mutex before accessing/modifying tanks_alive
-        std::lock_guard<std::mutex> lock(tanks_mutex);
 
-        vector<int> collisionObjects = grid->tankCollisionWithTank(tank->get_position());
+        grid_mutex.lock();
+        vector<Tank*> collisionObjects = grid->tankCollisionWithTank(tank->get_position());
+        grid_mutex.unlock();
 
         // check collision with every tank that is in neighbour gridcells, nudges tanks away from eachother if collided
-        for (int& collisionObject : collisionObjects) {
-            if (tank == tanks_alive.at(collisionObject)) continue;
+        for (Tank* collisionObject : collisionObjects) {
+            if (tank == collisionObject) continue;
             vec2 tankpos = tank->get_position();
-            vec2 otherTankpos = tanks_alive.at(collisionObject)->get_position();
+            vec2 otherTankpos = collisionObject->get_position();
 
             vec2 dir = tankpos - otherTankpos;
             float dir_squared_len = dir.sqr_length();
@@ -248,18 +247,18 @@ void Game::update(float deltaTime)
 
     // Checking collision tank-rocket and add explosions and smoke when collided
     for (Rocket& rocket : rockets) {
-        // Lock the mutex before accessing/modifying tanks_alive
-        std::lock_guard<std::mutex> lock(tanks_mutex);
-
         if (!rocket.active) continue;
 
-        int collisionindex = grid->rocketCollisionWithTank(rocket, tanks_alive);
-        if (collisionindex != -1) {
-            explosions.push_back(Explosion(&explosion, tanks_alive.at(collisionindex)->get_position()));
+        grid_mutex.lock();
+        Tank* tank = grid->rocketCollisionWithTank(rocket, tanks_alive);
+        grid_mutex.unlock();
 
-            if (tanks_alive.at(collisionindex)->hit(rocket_hit_value))
+        if (tank != NULL) {
+            explosions.push_back(Explosion(&explosion, tank->get_position()));
+
+            if (tank->hit(rocket_hit_value))
             {
-                smokes.push_back(Smoke(smoke, tanks_alive.at(collisionindex)->get_position() - vec2(7, 24)));
+                smokes.push_back(Smoke(smoke, tank->get_position() - vec2(7, 24)));
             }
         }
     }
@@ -290,7 +289,6 @@ void Game::update(float deltaTime)
             vec2 rocketpos = rocket.get_position();
             int inside = 0;
 
-            // Wait for convexhull calculation to be done
             thread_createConvexhull.wait();
 
             for (int i = 0, j = convex_hull.size() - 1; i < convex_hull.size(); j = i++) {
@@ -315,20 +313,19 @@ void Game::update(float deltaTime)
     //Update particle beams
     for (Particle_beam& particle_beam : particle_beams)
     {
-        // Lock the mutex before accessing/modifying tanks_alive
-        std::lock_guard<std::mutex> lock(tanks_mutex);
-
         particle_beam.tick(tanks_alive);
 
         // Checks collision with tanks in range of particle beam on the grid
-        vector<int> collisionTanks = grid->tankCollisionWithParticleBeam(particle_beam);
+        grid_mutex.lock();
+        vector<Tank*> collisionTanks = grid->tankCollisionWithParticleBeam(particle_beam);
+        grid_mutex.unlock();
 
-        for (int& collisionTank : collisionTanks) {
+        for (Tank* collisionTank : collisionTanks) {
 
             // Add smoke if tank is dead
-            if (tanks_alive.at(collisionTank)->hit(particle_beam.damage))
+            if (collisionTank->hit(particle_beam.damage))
             {
-                smokes.push_back(Smoke(smoke, tanks_alive.at(collisionTank)->position - vec2(0, 48)));
+                smokes.push_back(Smoke(smoke, collisionTank->position - vec2(0, 48)));
             }
         }
         
@@ -336,10 +333,17 @@ void Game::update(float deltaTime)
 
 
     //Remove and clear:
-    tanks_alive.erase(std::remove_if(tanks_alive.begin(), tanks_alive.end(), [](const Tank* tank) {return !tank->active; }), tanks_alive.end());
+    tanks_alive.erase(std::remove_if(tanks_alive.begin(), tanks_alive.end(), [&](Tank* tank) {
+        if (!tank->active) {
+            vec2 tankpos = tank->position;
+            grid->removeTank(tankpos, tank);
+            return true; // Tank is removed from tanks_alive
+        }
+        return false; // Tank remains in tanks_alive
+        }), tanks_alive.end());
+
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& explosion) { return explosion.done(); }), explosions.end());
-    grid->clear();
     qtBlue->clear();
     qtRed->clear();
     forcefield_hull.clear();
